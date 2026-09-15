@@ -16,7 +16,7 @@
 
 Este é o frontend do Contela: uma sala de reunião minimalista onde qualquer pessoa entra com um nome e o código de uma sala, conversa por chat e compartilha a própria tela via WebRTC. Sem contas, sem instalação, sem app nativo.
 
-O backend (Spring Boot) que faz a sinalização WebRTC e o broadcast das mensagens vive em [`../backend`](../backend).
+O backend (Spring Boot) que faz a sinalização WebRTC e o broadcast das mensagens vive em [`../be`](../be).
 
 ## Stack
 
@@ -50,7 +50,7 @@ flowchart LR
 
 ## Rodando localmente
 
-Pré-requisitos: [Node.js 20+](https://nodejs.org) e o [backend](../backend) rodando em `localhost:8080`.
+Pré-requisitos: [Node.js 20+](https://nodejs.org) e o [backend](../be) rodando em `localhost:8080`.
 
 ```bash
 npm install
@@ -73,9 +73,9 @@ app/
 
 ## Deploy
 
-Dá pra hospedar o front e o [backend](../backend) separadamente (ex: [Render](https://render.com)). Antes de colocar no ar:
+Dá pra hospedar o front e o [backend](../be) separadamente (ex: [Render](https://render.com)). Antes de colocar no ar:
 
 - `WS_URL` em `app/lib/websocket.ts` — hoje aponta pra `http://localhost:8080/wsock`, precisa virar variável de ambiente.
-- O CORS do backend já é configurável (veja o [README do backend](../backend)) — só falta apontar pro domínio real do frontend publicado.
+- O CORS do backend já é configurável (veja o [README do backend](../be)) — só falta apontar pro domínio real do frontend publicado.
 
 Sem o `WS_URL` correto, o front em produção não consegue falar com o backend em produção.

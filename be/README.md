@@ -16,7 +16,7 @@
 
 Este é o backend do Contela: um servidor Spring Boot que fala STOMP sobre WebSocket. Ele não transmite vídeo — apenas coordena quem está em cada sala, retransmite mensagens de chat, e faz a ponte de sinalização WebRTC (offer/answer/ICE) entre os navegadores, que então trocam a tela compartilhada diretamente entre si (P2P).
 
-O frontend (Next.js) que consome esse servidor vive em [`../frontend`](../frontend).
+O frontend (Next.js) que consome esse servidor vive em [`../contela-fe`](../contela-fe).
 
 ## Stack
 
@@ -51,7 +51,7 @@ Pré-requisito: JDK 17+.
 ./mvnw spring-boot:run
 ```
 
-Sobe em `http://localhost:8080`, com o endpoint STOMP em `/wsock`. Espera o [frontend](../frontend) rodando em `http://localhost:3000` (único `origin` liberado por padrão — ajustável em `app.cors.allowed-origins`).
+Sobe em `http://localhost:8080`, com o endpoint STOMP em `/wsock`. Espera o [frontend](../contela-fe) rodando em `http://localhost:3000` (único `origin` liberado por padrão — ajustável em `app.cors.allowed-origins`).
 
 ## Estrutura do projeto
 

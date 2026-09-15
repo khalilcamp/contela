@@ -8,8 +8,8 @@
 
 Monorepo com os dois lados do Contela:
 
-- [`backend/`](backend) — servidor Spring Boot (STOMP/WebSocket) que coordena salas, chat e sinalização WebRTC.
-- [`frontend/`](frontend) — app Next.js onde as pessoas entram na sala, conversam e compartilham a tela.
+- [`be/`](be) — servidor Spring Boot (STOMP/WebSocket) que coordena salas, chat e sinalização WebRTC.
+- [`contela-fe/`](contela-fe) — app Next.js onde as pessoas entram na sala, conversam e compartilham a tela.
 
 ```mermaid
 flowchart LR
@@ -34,15 +34,15 @@ O backend só participa da sinalização (quem entrou na sala, mensagens de chat
 
 ```bash
 # terminal 1
-cd backend
+cd be
 ./mvnw spring-boot:run
 
 # terminal 2
-cd frontend
+cd contela-fe
 npm install
 npm run dev
 ```
 
 Abra [http://localhost:3000](http://localhost:3000) em duas abas pra testar com mais de uma pessoa na sala.
 
-Detalhes de cada lado (stack, estrutura, deploy) estão nos READMEs de [`backend/`](backend/README.md) e [`frontend/`](frontend/README.md).
+Detalhes de cada lado (stack, estrutura, deploy) estão nos READMEs de [`be/`](be/README.md) e [`contela-fe/`](contela-fe/README.md).
