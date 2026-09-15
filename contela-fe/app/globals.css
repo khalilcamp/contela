@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+  --background: #1e1f22;
+  --foreground: #f2f3f5;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-bricolage);
+
+  --color-discord-bg: #313338;
+  --color-discord-bg-secondary: #2b2d31;
+  --color-discord-bg-tertiary: #1e1f22;
+  --color-discord-bg-hover: #3f4248;
+  --color-discord-bg-active: #404249;
+  --color-discord-border: #26272b;
+  --color-discord-text: #f2f3f5;
+  --color-discord-text-muted: #949ba4;
+  --color-discord-brand: #5865f2;
+  --color-discord-brand-hover: #4752c4;
+  --color-discord-green: #23a55a;
+  --color-discord-red: #f23f43;
+  --color-discord-red-hover: #da373c;
+
+  --color-lobby-border: #27282e;
+  --color-lobby-accent-soft: #8b93ff;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
