@@ -76,8 +76,17 @@ export function DrawerCompartilhamento({ aberto, onFechar, onIniciar }: DrawerCo
     const janelas = filtradas.filter((f) => f.tipo === 'window');
 
     const podeIniciar = !desktop || selecionada !== null;
-    const audioIndisponivel = desktop && selecionada?.tipo === 'window';
+    const janelaSelecionada = desktop && selecionada?.tipo === 'window';
+    const audioIndisponivel = janelaSelecionada && !window.contela?.audioPorJanela;
     const audioAtivo = opcoes.audio && !audioIndisponivel;
+    const rotuloAudio = !desktop ? 'Áudio' : janelaSelecionada ? 'Áudio da janela' : 'Áudio do sistema';
+    const detalheAudio = audioIndisponivel
+        ? 'Indisponível para janelas neste sistema. Compartilhe a tela inteira para incluir o som.'
+        : janelaSelecionada
+          ? 'Só o som desta janela, sem o resto do computador.'
+          : desktop
+            ? 'Todo o som do computador.'
+            : null;
     const mbps = (calcularBitrateMaximo(opcoes) / 1_000_000).toFixed(1).replace('.', ',');
     const resumo = `${RESOLUCOES.find((r) => r.valor === opcoes.resolucao)?.rotulo} a ${opcoes.fps} fps, até ${mbps} Mbps`;
 
@@ -173,10 +182,8 @@ export function DrawerCompartilhamento({ aberto, onFechar, onIniciar }: DrawerCo
                             }`}
                         >
                             <span>
-                                <span className="block text-sm text-paper">Áudio do sistema</span>
-                                {audioIndisponivel && (
-                                    <span className="block text-xs text-mute">Só ao compartilhar a tela inteira</span>
-                                )}
+                                <span className="block text-sm text-paper">{rotuloAudio}</span>
+                                {detalheAudio && <span className="block text-xs text-mute">{detalheAudio}</span>}
                             </span>
                             <input
                                 type="checkbox"

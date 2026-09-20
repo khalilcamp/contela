@@ -1,6 +1,6 @@
 {
   "name": "contela-fe",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,13 +12,10 @@
     "electron:build": "cross-env ELECTRON=1 next build && electron-builder"
   },
   "dependencies": {
-    "@stomp/stompjs": "^7.3.0",
-    "next": "16.3.3",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "sockjs-client": "^1.6.1"
+    "application-loopback": "^1.2.7"
   },
   "devDependencies": {
+    "@stomp/stompjs": "^7.3.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -30,6 +27,10 @@
     "electron-builder": "^26.15.3",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
+    "next": "16.3.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sockjs-client": "^1.6.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "wait-on": "^9.1.0"
@@ -44,8 +45,7 @@
     "files": [
       "electron/**/*",
       "out/**/*",
-      "package.json",
-      "!node_modules/**"
+      "package.json"
     ],
     "protocols": [
       {
@@ -77,6 +77,9 @@
     },
     "portable": {
       "artifactName": "Contela-${version}-portatil.${ext}"
-    }
+    },
+    "asarUnpack": [
+      "node_modules/application-loopback/bin/**"
+    ]
   }
 }

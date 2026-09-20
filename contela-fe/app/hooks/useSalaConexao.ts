@@ -267,9 +267,10 @@ export function useSalaConexao() {
             .map((p) => p.id)
             .filter((id) => id !== meuId);
 
+        const gerenciador = webrtcRef.current;
         let stream: MediaStream;
         try {
-            stream = await webrtcRef.current.iniciarCompartilhamento(outrosIds, opcoes, fonteId);
+            stream = await gerenciador.iniciarCompartilhamento(outrosIds, opcoes, fonteId);
         } catch {
             return;
         }
@@ -278,6 +279,10 @@ export function useSalaConexao() {
         enviarStatusCompartilhamento(clientRef.current, salaIdAtualRef.current, true);
         compartilhandoRef.current = true;
         setCompartilhando(true);
+
+        if (gerenciador.audioDeJanelaFalhou) {
+            mostrarErro('Não foi possível capturar o áudio dessa janela. Você está transmitindo sem som.');
+        }
     }
 
     function pararLocalmente() {

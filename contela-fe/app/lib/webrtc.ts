@@ -8,6 +8,7 @@ import {
     construirConstraintsVideo,
 } from '../types/compartilhamento';
 
+import { AudioJanela } from './audioJanela';
 import { SERVIDORES_ICE_PADRAO } from './ice';
 
 export class GerenciadorWebRTC {
@@ -20,6 +21,8 @@ export class GerenciadorWebRTC {
     private filaSinais: Promise<void> = Promise.resolve();
     private streamLocal: MediaStream | null = null;
     private opcoes: OpcoesCompartilhamento = OPCOES_PADRAO;
+    private audioJanela: AudioJanela | null = null;
+    audioDeJanelaFalhou = false;
 
     private onStreamRemota: (peerId: string, stream: MediaStream) => void;
     private onCompartilhamentoParado: (peerId: string) => void;
@@ -50,13 +53,23 @@ export class GerenciadorWebRTC {
         }
 
         this.opcoes = opcoes;
+        this.audioDeJanelaFalhou = false;
+        const ehJanelaDoDesktop = Boolean(fonteId?.startsWith('window:') && window.contela);
+        const audioDoSistema = opcoes.audio && !ehJanelaDoDesktop;
+
         this.streamLocal = await navigator.mediaDevices.getDisplayMedia({
             video: construirConstraintsVideo(opcoes),
-            audio: opcoes.audio ? ({ systemAudio: 'include', windowAudio: 'window' } as MediaTrackConstraints) : false,
+            audio: audioDoSistema ? ({ systemAudio: 'include', windowAudio: 'window' } as MediaTrackConstraints) : false,
             selfBrowserSurface: 'exclude',
             surfaceSwitching: 'include',
             monitorTypeSurfaces: 'include',
         } as DisplayMediaStreamOptions);
+
+        if (opcoes.audio && ehJanelaDoDesktop && fonteId) {
+            this.audioJanela = await AudioJanela.criar(fonteId);
+            if (this.audioJanela) this.streamLocal.addTrack(this.audioJanela.faixa);
+            else this.audioDeJanelaFalhou = true;
+        }
 
         this.streamLocal.getVideoTracks().forEach((track) => {
             track.contentHint = opcoes.fps === 60 ? 'motion' : 'detail';
@@ -81,6 +94,8 @@ export class GerenciadorWebRTC {
     pararCompartilhamento() {
         this.streamLocal?.getTracks().forEach((track) => track.stop());
         this.streamLocal = null;
+        this.audioJanela?.encerrar();
+        this.audioJanela = null;
 
         this.conexoes.forEach((conexao, peerId) => {
             try {

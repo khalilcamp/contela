@@ -1,6 +1,8 @@
 const { app, BrowserWindow, Menu, protocol, net, session, desktopCapturer, shell, ipcMain } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
+const { spawn } = require('node:child_process');
+const loopback = process.platform === 'win32' ? require('application-loopback') : null;
 
 const PROTOCOLO_DEEP_LINK = 'contela';
 const ESQUEMA_APP = 'app';
@@ -30,6 +32,88 @@ function abrirExterno(url) {
 
 function remetenteConfiavel(evento) {
     return Boolean(evento.senderFrame) && urlConfiavel(evento.senderFrame.url);
+}
+
+if (loopback && app.isPackaged) {
+    loopback.setExecutablesRoot(
+        path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'application-loopback', 'bin')
+    );
+}
+
+const FORMATO_AUDIO_JANELA = { sampleRate: 48000, canais: 2, bits: 16 };
+let capturaJanela = null;
+
+function listarJanelasComProcesso() {
+    return new Promise((resolve) => {
+        let saida = '';
+        let filho;
+        try {
+            filho = spawn(loopback.getProcessListBinaryPath(), [], { windowsHide: true });
+        } catch {
+            return resolve([]);
+        }
+        filho.on('error', () => resolve([]));
+        filho.stdout.setEncoding('utf8');
+        filho.stdout.on('data', (dados) => (saida += dados));
+        filho.on('close', () => {
+            const janelas = saida
+                .split('\n')
+                .map((linha) => linha.replace('\r', '').split(';'))
+                .filter((partes) => partes.length >= 3)
+                .map(([processId, hwnd, ...titulo]) => ({ processId, hwnd, title: titulo.join(';') }));
+            resolve(janelas);
+        });
+    });
+}
+
+function pararCapturaJanela() {
+    if (!capturaJanela) return;
+    try {
+        capturaJanela.filho.kill();
+    } catch {}
+    capturaJanela = null;
+}
+
+async function iniciarCapturaJanela(sourceId, destino) {
+    if (!loopback || typeof sourceId !== 'string' || !sourceId.startsWith('window:')) return null;
+    if (janela && sourceId === janela.getMediaSourceId()) return null;
+
+    const hwnd = Number(sourceId.split(':')[1]);
+    if (!Number.isFinite(hwnd)) return null;
+
+    const alvo = (await listarJanelasComProcesso()).find((j) => Number(j.hwnd) === hwnd);
+    if (!alvo) return null;
+
+    pararCapturaJanela();
+
+    let filho;
+    try {
+        filho = spawn(loopback.getLoopbackBinaryPath(), [String(alvo.processId)], {
+            windowsHide: true,
+            stdio: ['pipe', 'pipe', 'pipe'],
+        });
+    } catch {
+        return null;
+    }
+
+    const iniciou = await new Promise((resolve) => {
+        filho.once('error', () => resolve(false));
+        filho.once('spawn', () => resolve(true));
+    });
+    if (!iniciou) return null;
+
+    filho.on('error', () => {});
+    filho.stdin.on('error', () => {});
+    filho.stderr.resume();
+    filho.stdout.on('data', (pedaco) => {
+        if (!destino.isDestroyed()) destino.send('contela:audio-pcm', pedaco);
+    });
+    filho.on('close', () => {
+        if (capturaJanela && capturaJanela.filho === filho) capturaJanela = null;
+    });
+
+    capturaJanela = { filho };
+    return FORMATO_AUDIO_JANELA;
 }
 
 let janela = null;
@@ -99,6 +183,12 @@ async function listarFontes() {
 
 function registrarCapturaDeTela() {
     ipcMain.handle('contela:listar-fontes', (evento) => (remetenteConfiavel(evento) ? listarFontes() : []));
+    ipcMain.handle('contela:audio-janela-iniciar', (evento, sourceId) =>
+        remetenteConfiavel(evento) ? iniciarCapturaJanela(sourceId, evento.sender) : null
+    );
+    ipcMain.handle('contela:audio-janela-parar', (evento) => {
+        if (remetenteConfiavel(evento)) pararCapturaJanela();
+    });
     ipcMain.handle('contela:selecionar-fonte', (evento, escolha) => {
         if (!remetenteConfiavel(evento)) return;
         if (!escolha || typeof escolha.id !== 'string') return;
@@ -171,7 +261,10 @@ function criarJanela() {
         evento.preventDefault();
         abrirExterno(url);
     });
-    janela.on('closed', () => (janela = null));
+    janela.on('closed', () => {
+        pararCapturaJanela();
+        janela = null;
+    });
 }
 
 if (process.defaultApp && process.argv[1]) {
@@ -212,6 +305,8 @@ if (!app.requestSingleInstanceLock()) {
             if (BrowserWindow.getAllWindows().length === 0) criarJanela();
         });
     });
+
+    app.on('will-quit', pararCapturaJanela);
 
     app.on('window-all-closed', () => {
         if (process.platform !== 'darwin') app.quit();
