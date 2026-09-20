@@ -2,21 +2,43 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
-import { criarClienteStomp, entrarNaSala, enviarMensagem, enviarStatusCompartilhamento } from '../lib/websocket';
+import {
+    criarClienteStomp,
+    criarSala,
+    entrarNaSala,
+    enviarMensagem,
+    enviarStatusCompartilhamento,
+    expulsarParticipante,
+    normalizarSalaId,
+    pararCompartilhamentoDe,
+} from '../lib/websocket';
 import { GerenciadorWebRTC } from '../lib/webrtc';
-import { SalaResponse, MensagemResponse } from '../types/sala';
+import { SalaResponse, MensagemResponse, SinalWebRTC } from '../types/sala';
 import { OpcoesCompartilhamento } from '../types/compartilhamento';
+
+const TEMPO_AVISO_MS = 8000;
+const TEMPO_LIMITE_ENTRADA_MS = 10000;
 
 export function useSalaConexao() {
     const clientRef = useRef<Client | null>(null);
     const webrtcRef = useRef<GerenciadorWebRTC | null>(null);
     const meuIdRef = useRef<string | null>(null);
+    const salaIdAtualRef = useRef<string | null>(null);
+    const entradoRef = useRef(false);
+    const sincronizadoRef = useRef(false);
     const compartilhandoRef = useRef(false);
     const participantesConhecidosRef = useRef<Set<string>>(new Set());
+    const participantesAtuaisRef = useRef<Set<string>>(new Set());
+    const sinaisPendentesRef = useRef<SinalWebRTC[]>([]);
+    const temporizadorEntradaRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const temporizadorAvisoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [nome, setNome] = useState('');
     const [salaId, setSalaId] = useState('');
+    const [senha, setSenha] = useState('');
     const [conectado, setConectado] = useState(false);
+    const [entrando, setEntrando] = useState(false);
+    const [erro, setErro] = useState<string | null>(null);
     const [meuId, setMeuId] = useState<string | null>(null);
 
     const [sala, setSala] = useState<SalaResponse | null>(null);
@@ -41,26 +63,105 @@ export function useSalaConexao() {
 
     useEffect(() => {
         return () => {
-            webrtcRef.current?.pararCompartilhamento();
-            clientRef.current?.deactivate();
+            if (temporizadorEntradaRef.current) clearTimeout(temporizadorEntradaRef.current);
+            if (temporizadorAvisoRef.current) clearTimeout(temporizadorAvisoRef.current);
+            const client = clientRef.current;
             clientRef.current = null;
+            try {
+                webrtcRef.current?.pararCompartilhamento();
+            } catch {}
+            client?.deactivate();
         };
     }, []);
 
-    function handleEntrar() {
-        if (!nome || !salaId) return;
+    function mostrarErro(mensagem: string) {
+        setErro(mensagem);
+        if (temporizadorAvisoRef.current) clearTimeout(temporizadorAvisoRef.current);
+        temporizadorAvisoRef.current = setTimeout(() => setErro(null), TEMPO_AVISO_MS);
+    }
+
+    function limparErro() {
+        if (temporizadorAvisoRef.current) clearTimeout(temporizadorAvisoRef.current);
+        setErro(null);
+    }
+
+    function encerrarSessao(mensagem?: string) {
+        if (temporizadorEntradaRef.current) clearTimeout(temporizadorEntradaRef.current);
+
+        const client = clientRef.current;
+        clientRef.current = null;
+        try {
+            webrtcRef.current?.pararCompartilhamento();
+        } catch {}
+        webrtcRef.current = null;
+        client?.deactivate();
+
+        meuIdRef.current = null;
+        salaIdAtualRef.current = null;
+        entradoRef.current = false;
+        sincronizadoRef.current = false;
+        compartilhandoRef.current = false;
+        participantesConhecidosRef.current = new Set();
+        participantesAtuaisRef.current = new Set();
+        sinaisPendentesRef.current = [];
+
+        setConectado(false);
+        setEntrando(false);
+        setMeuId(null);
+        setSala(null);
+        setMensagens([]);
+        setStreamLocal(null);
+        setStreamsRemotas(new Map());
+        setCompartilhando(false);
+        if (mensagem) mostrarErro(mensagem);
+    }
+
+    function processarSinal(sinal: SinalWebRTC) {
+        if (!participantesAtuaisRef.current.has(sinal.remetenteId)) return;
+        webrtcRef.current?.processarSinalRecebido(sinal);
+    }
+
+    function iniciarConexao(salaAlvo: string, tokenDono: string | null) {
         if (clientRef.current) return;
 
         const client = criarClienteStomp();
+        clientRef.current = client;
+        limparErro();
+        setEntrando(true);
 
         client.onConnect = () => {
-            setConectado(true);
+            entrarNaSala(client, salaAlvo, { nome, senha, tokenDono }, {
+                onConfirmacao: ({ meuId: idRecebido, salaId: salaConfirmada }) => {
+                    if (temporizadorEntradaRef.current) clearTimeout(temporizadorEntradaRef.current);
+                    entradoRef.current = true;
+                    meuIdRef.current = idRecebido;
+                    salaIdAtualRef.current = salaConfirmada;
+                    participantesConhecidosRef.current.add(idRecebido);
+                    setSalaId(salaConfirmada);
+                    setMeuId(idRecebido);
 
-            entrarNaSala(
-                client,
-                salaId,
-                nome,
-                (salaAtualizada) => {
+                    webrtcRef.current = new GerenciadorWebRTC(
+                        client,
+                        salaConfirmada,
+                        idRecebido,
+                        (peerId, stream) => {
+                            setStreamsRemotas((prev) => new Map(prev).set(peerId, stream));
+                        },
+                        (peerId) => {
+                            setStreamsRemotas((prev) => {
+                                const novo = new Map(prev);
+                                novo.delete(peerId);
+                                return novo;
+                            });
+                        }
+                    );
+
+                    setConectado(true);
+                    setEntrando(false);
+                },
+                onParticipantes: (salaAtualizada) => {
+                    participantesAtuaisRef.current = new Set(salaAtualizada.participantes.map((p) => p.id));
+
                     const novosIds = salaAtualizada.participantes
                         .map((p) => p.id)
                         .filter((id) => id !== meuIdRef.current && !participantesConhecidosRef.current.has(id));
@@ -76,49 +177,86 @@ export function useSalaConexao() {
                     }
 
                     setSala(salaAtualizada);
-                },
-                (novaMensagem) => setMensagens((prev) => [...prev, novaMensagem]),
-                (sinal) => webrtcRef.current?.processarSinalRecebido(sinal),
-                (idRecebido) => {
-                    meuIdRef.current = idRecebido;
-                    participantesConhecidosRef.current.add(idRecebido);
-                    setMeuId(idRecebido);
 
-                    webrtcRef.current = new GerenciadorWebRTC(
-                        client,
-                        salaId,
-                        idRecebido,
-                        (peerId, stream) => {
-                            setStreamsRemotas((prev) => new Map(prev).set(peerId, stream));
-                        },
-                        (peerId) => {
-                            setStreamsRemotas((prev) => {
-                                const novo = new Map(prev);
-                                novo.delete(peerId);
-                                return novo;
-                            });
-                        }
-                    );
-                }
-            );
+                    if (!sincronizadoRef.current) {
+                        sincronizadoRef.current = true;
+                        const pendentes = sinaisPendentesRef.current;
+                        sinaisPendentesRef.current = [];
+                        pendentes.forEach(processarSinal);
+                    }
+                },
+                onMensagem: (novaMensagem) => setMensagens((prev) => [...prev, novaMensagem]),
+                onSinal: (sinal) => {
+                    if (!sincronizadoRef.current) {
+                        sinaisPendentesRef.current.push(sinal);
+                        return;
+                    }
+                    processarSinal(sinal);
+                },
+                onErro: (mensagem) => {
+                    if (entradoRef.current) mostrarErro(mensagem);
+                    else encerrarSessao(mensagem);
+                },
+                onExpulso: () => encerrarSessao('Você foi removido da sala pelo anfitrião.'),
+            });
+
+            temporizadorEntradaRef.current = setTimeout(() => {
+                if (!entradoRef.current) encerrarSessao('O servidor não respondeu. Tente novamente.');
+            }, TEMPO_LIMITE_ENTRADA_MS);
         };
 
         client.onStompError = (frame) => {
             console.error('Erro STOMP:', frame);
         };
 
+        client.onWebSocketClose = () => {
+            if (clientRef.current !== client) return;
+            encerrarSessao(
+                entradoRef.current ? 'A conexão com o servidor foi perdida.' : 'Não foi possível conectar ao servidor.'
+            );
+        };
+
         client.activate();
-        clientRef.current = client;
+    }
+
+    function handleEntrar() {
+        const alvo = normalizarSalaId(salaId);
+        if (!nome.trim() || !alvo || entrando || clientRef.current) return;
+        iniciarConexao(alvo, null);
+    }
+
+    async function handleCriar() {
+        if (!nome.trim() || entrando || clientRef.current) return;
+
+        limparErro();
+        setEntrando(true);
+        try {
+            const criada = await criarSala(senha);
+            setSalaId(criada.id);
+            iniciarConexao(criada.id, criada.tokenDono);
+        } catch (e) {
+            setEntrando(false);
+            mostrarErro(e instanceof Error ? e.message : 'Não foi possível criar a sala.');
+        }
+    }
+
+    function handleSair() {
+        encerrarSessao();
     }
 
     function handleEnviarMensagem() {
-        if (!clientRef.current || !texto.trim()) return;
-        enviarMensagem(clientRef.current, salaId, texto);
+        if (!clientRef.current || !salaIdAtualRef.current || !texto.trim()) return;
+        enviarMensagem(clientRef.current, salaIdAtualRef.current, texto);
         setTexto('');
     }
 
     async function handleCompartilhar(opcoes: OpcoesCompartilhamento, fonteId: string | null) {
-        if (!webrtcRef.current || !sala || !clientRef.current) return;
+        if (!webrtcRef.current || !sala || !clientRef.current || !salaIdAtualRef.current) return;
+
+        if (sala.participantes.some((p) => p.compartilhando && p.id !== meuId)) {
+            mostrarErro('Outra pessoa já está compartilhando a tela.');
+            return;
+        }
 
         const outrosIds = sala.participantes
             .map((p) => p.id)
@@ -132,7 +270,7 @@ export function useSalaConexao() {
         }
 
         setStreamLocal(stream);
-        enviarStatusCompartilhamento(clientRef.current, salaId, true);
+        enviarStatusCompartilhamento(clientRef.current, salaIdAtualRef.current, true);
         compartilhandoRef.current = true;
         setCompartilhando(true);
     }
@@ -145,10 +283,22 @@ export function useSalaConexao() {
     }
 
     function handlePararCompartilhamento() {
-        if (clientRef.current) {
-            enviarStatusCompartilhamento(clientRef.current, salaId, false);
+        if (clientRef.current && salaIdAtualRef.current) {
+            enviarStatusCompartilhamento(clientRef.current, salaIdAtualRef.current, false);
         }
         pararLocalmente();
+    }
+
+    function handlePararDe(alvoId: string) {
+        if (clientRef.current && salaIdAtualRef.current) {
+            pararCompartilhamentoDe(clientRef.current, salaIdAtualRef.current, alvoId);
+        }
+    }
+
+    function handleExpulsar(alvoId: string) {
+        if (clientRef.current && salaIdAtualRef.current) {
+            expulsarParticipante(clientRef.current, salaIdAtualRef.current, alvoId);
+        }
     }
 
     return {
@@ -156,8 +306,14 @@ export function useSalaConexao() {
         setNome,
         salaId,
         setSalaId,
+        senha,
+        setSenha,
         conectado,
+        entrando,
+        erro,
+        limparErro,
         meuId,
+        souDono: sala !== null && sala.donoId === meuId,
         sala,
         mensagens,
         texto,
@@ -168,8 +324,12 @@ export function useSalaConexao() {
         chatAberto,
         onToggleChat: () => setChatAberto((v) => !v),
         handleEntrar,
+        handleCriar,
+        handleSair,
         handleEnviarMensagem,
         handleCompartilhar,
         handlePararCompartilhamento,
+        handlePararDe,
+        handleExpulsar,
     };
 }

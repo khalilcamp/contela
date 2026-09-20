@@ -7,6 +7,7 @@ export interface Integrante {
 export interface SalaResponse {
     salaId: string;
     participantes: Integrante[];
+    donoId: string | null;
 }
 
 export interface MensagemResponse {

@@ -1,4 +1,4 @@
-import { Client, IMessage } from '@stomp/stompjs';
+import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { SalaResponse, MensagemResponse, SinalWebRTC } from '../types/sala';
 
@@ -9,46 +9,84 @@ function obterWsUrl(): string {
     return `http://${host}:8080/wsock`;
 }
 
+function obterApiUrl(): string {
+    return obterWsUrl().replace(/\/wsock$/, '');
+}
+
+export function normalizarSalaId(bruto: string): string {
+    const limpo = bruto.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return limpo.length === 8 ? `${limpo.slice(0, 4)}-${limpo.slice(4)}` : limpo;
+}
+
+export interface SalaCriada {
+    id: string;
+    tokenDono: string;
+}
+
+export async function criarSala(senha: string): Promise<SalaCriada> {
+    let resposta: Response;
+    try {
+        resposta = await fetch(`${obterApiUrl()}/api/salas`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(senha ? { senha } : {}),
+        });
+    } catch {
+        throw new Error('Não foi possível falar com o servidor.');
+    }
+
+    const dados = await resposta.json().catch(() => null);
+    if (!resposta.ok) {
+        throw new Error(dados?.mensagem ?? 'Não foi possível criar a sala.');
+    }
+    return dados as SalaCriada;
+}
+
 export function criarClienteStomp(): Client {
     return new Client({
         webSocketFactory: () => new SockJS(obterWsUrl()),
-        reconnectDelay: 5000,
+        reconnectDelay: 0,
+        heartbeatIncoming: 10000,
+        heartbeatOutgoing: 10000,
     });
 }
 
-export function entrarNaSala(
-    client: Client,
-    salaId: string,
-    nome: string,
-    onParticipantesAtualizados: (sala: SalaResponse) => void,
-    onNovaMensagem: (mensagem: MensagemResponse) => void,
-    onSinalRecebido: (sinal: SinalWebRTC) => void,
-    onConfirmacaoEntrada: (meuId: string) => void
-) {
-    client.subscribe(`/topic/sala/${salaId}/participantes`, (message: IMessage) => {
-        const sala: SalaResponse = JSON.parse(message.body);
-        onParticipantesAtualizados(sala);
-    });
+export interface DadosEntrada {
+    nome: string;
+    senha: string;
+    tokenDono: string | null;
+}
 
-    client.subscribe(`/topic/sala/${salaId}/chat`, (message: IMessage) => {
-        const mensagem: MensagemResponse = JSON.parse(message.body);
-        onNovaMensagem(mensagem);
-    });
+export interface EventosSala {
+    onConfirmacao: (confirmacao: { meuId: string; salaId: string }) => void;
+    onParticipantes: (sala: SalaResponse) => void;
+    onMensagem: (mensagem: MensagemResponse) => void;
+    onSinal: (sinal: SinalWebRTC) => void;
+    onErro: (mensagem: string) => void;
+    onExpulso: () => void;
+}
 
-    client.subscribe(`/user/queue/sinal`, (message: IMessage) => {
-        const sinal: SinalWebRTC = JSON.parse(message.body);
-        onSinalRecebido(sinal);
-    });
+export function entrarNaSala(client: Client, salaId: string, dados: DadosEntrada, eventos: EventosSala) {
+    client.subscribe('/user/queue/erro', (message) => eventos.onErro(message.body));
+    client.subscribe('/user/queue/expulso', () => eventos.onExpulso());
+    client.subscribe('/user/queue/sinal', (message) => eventos.onSinal(JSON.parse(message.body)));
 
-    client.subscribe(`/user/queue/confirmacao`, (message: IMessage) => {
+    client.subscribe('/user/queue/confirmacao', (message) => {
         const confirmacao = JSON.parse(message.body);
-        onConfirmacaoEntrada(confirmacao.meuId);
+        eventos.onConfirmacao(confirmacao);
+
+        client.subscribe(`/topic/sala/${confirmacao.salaId}/participantes`, (m) => eventos.onParticipantes(JSON.parse(m.body)));
+        client.subscribe(`/topic/sala/${confirmacao.salaId}/chat`, (m) => eventos.onMensagem(JSON.parse(m.body)));
+        client.publish({ destination: `/app/sala/${confirmacao.salaId}/sincronizar`, body: '' });
     });
 
-    client.publish({
-        destination: `/app/sala/${salaId}/entrar`,
-        body: JSON.stringify({ nome }),
-    });
+    setTimeout(() => {
+        if (!client.connected) return;
+        client.publish({
+            destination: `/app/sala/${salaId}/entrar`,
+            body: JSON.stringify({ nome: dados.nome, senha: dados.senha || null, tokenDono: dados.tokenDono }),
+        });
+    }, 150);
 }
 
 export function enviarMensagem(client: Client, salaId: string, texto: string) {
@@ -73,5 +111,19 @@ export function enviarSinal(
     client.publish({
         destination: `/app/sala/${salaId}/sinal`,
         body: JSON.stringify(sinal),
+    });
+}
+
+export function pararCompartilhamentoDe(client: Client, salaId: string, alvoId: string) {
+    client.publish({
+        destination: `/app/sala/${salaId}/parar`,
+        body: JSON.stringify({ alvoId }),
+    });
+}
+
+export function expulsarParticipante(client: Client, salaId: string, alvoId: string) {
+    client.publish({
+        destination: `/app/sala/${salaId}/expulsar`,
+        body: JSON.stringify({ alvoId }),
     });
 }

@@ -9,6 +9,28 @@ const OUT_DIR = path.join(__dirname, '..', 'out');
 
 const usarEstatico = app.isPackaged || process.argv.includes('--static');
 const DEV_URL = process.env.ELECTRON_START_URL || 'http://localhost:3000';
+const ORIGEM_APP = usarEstatico ? `${ESQUEMA_APP}://${HOST_APP}` : new URL(DEV_URL).origin;
+const ID_SALA_VALIDO = /^[A-Za-z0-9-]{1,16}$/;
+
+function urlConfiavel(url) {
+    try {
+        const u = new URL(url);
+        return `${u.protocol}//${u.host}` === ORIGEM_APP;
+    } catch {
+        return false;
+    }
+}
+
+function abrirExterno(url) {
+    try {
+        const u = new URL(url);
+        if (u.protocol === 'https:' || u.protocol === 'http:') shell.openExternal(u.toString());
+    } catch {}
+}
+
+function remetenteConfiavel(evento) {
+    return Boolean(evento.senderFrame) && urlConfiavel(evento.senderFrame.url);
+}
 
 let janela = null;
 let salaPendente = null;
@@ -23,7 +45,8 @@ function extrairSala(url) {
         const u = new URL(url);
         if (u.protocol !== `${PROTOCOLO_DEEP_LINK}:`) return null;
         const partes = [u.hostname, ...u.pathname.split('/')].filter(Boolean);
-        return partes[0] === 'sala' && partes[1] ? decodeURIComponent(partes[1]) : null;
+        const salaId = partes[0] === 'sala' && partes[1] ? decodeURIComponent(partes[1]) : null;
+        return salaId && ID_SALA_VALIDO.test(salaId) ? salaId : null;
     } catch {
         return null;
     }
@@ -44,7 +67,9 @@ function registrarProtocoloApp() {
     protocol.handle(ESQUEMA_APP, (request) => {
         const { pathname } = new URL(request.url);
         let arquivo = path.normalize(path.join(OUT_DIR, decodeURIComponent(pathname)));
-        if (!arquivo.startsWith(OUT_DIR)) return new Response('Forbidden', { status: 403 });
+        if (arquivo !== OUT_DIR && !arquivo.startsWith(OUT_DIR + path.sep)) {
+            return new Response('Forbidden', { status: 403 });
+        }
         if (pathname === '/' || !path.extname(arquivo)) arquivo = path.join(arquivo, 'index.html');
         return net.fetch(pathToFileURL(arquivo).toString());
     });
@@ -73,8 +98,9 @@ async function listarFontes() {
 }
 
 function registrarCapturaDeTela() {
-    ipcMain.handle('contela:listar-fontes', listarFontes);
-    ipcMain.handle('contela:selecionar-fonte', (_e, escolha) => {
+    ipcMain.handle('contela:listar-fontes', (evento) => (remetenteConfiavel(evento) ? listarFontes() : []));
+    ipcMain.handle('contela:selecionar-fonte', (evento, escolha) => {
+        if (!remetenteConfiavel(evento)) return;
         if (!escolha || typeof escolha.id !== 'string') return;
         escolhaCaptura = { id: escolha.id, audio: Boolean(escolha.audio) };
     });
@@ -136,8 +162,13 @@ function criarJanela() {
     janela.loadURL(usarEstatico ? `${ESQUEMA_APP}://${HOST_APP}/` : DEV_URL);
 
     janela.webContents.setWindowOpenHandler(({ url }) => {
-        shell.openExternal(url);
+        abrirExterno(url);
         return { action: 'deny' };
+    });
+    janela.webContents.on('will-navigate', (evento, url) => {
+        if (urlConfiavel(url)) return;
+        evento.preventDefault();
+        abrirExterno(url);
     });
     janela.on('closed', () => (janela = null));
 }
@@ -161,7 +192,8 @@ if (!app.requestSingleInstanceLock()) {
         tratarDeepLink(url);
     });
 
-    ipcMain.handle('contela:sala-inicial', () => {
+    ipcMain.handle('contela:sala-inicial', (evento) => {
+        if (!remetenteConfiavel(evento)) return null;
         const s = salaPendente;
         salaPendente = null;
         return s;

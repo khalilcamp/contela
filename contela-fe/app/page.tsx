@@ -10,8 +10,14 @@ export default function Home() {
     setNome,
     salaId,
     setSalaId,
+    senha,
+    setSenha,
     conectado,
+    entrando,
+    erro,
+    limparErro,
     meuId,
+    souDono,
     sala,
     mensagens,
     texto,
@@ -22,9 +28,13 @@ export default function Home() {
     chatAberto,
     onToggleChat,
     handleEntrar,
+    handleCriar,
+    handleSair,
     handleEnviarMensagem,
     handleCompartilhar,
     handlePararCompartilhamento,
+    handlePararDe,
+    handleExpulsar,
   } = useSalaConexao();
 
   if (!conectado) {
@@ -32,9 +42,14 @@ export default function Home() {
         <EntrarTela
             nome={nome}
             salaId={salaId}
+            senha={senha}
+            erro={erro}
+            entrando={entrando}
             onNomeChange={setNome}
             onSalaIdChange={setSalaId}
+            onSenhaChange={setSenha}
             onEntrar={handleEntrar}
+            onCriar={handleCriar}
         />
     );
   }
@@ -44,6 +59,9 @@ export default function Home() {
           salaId={salaId}
           sala={sala}
           meuId={meuId}
+          souDono={souDono}
+          aviso={erro}
+          onFecharAviso={limparErro}
           compartilhando={compartilhando}
           streamLocal={streamLocal}
           streamsRemotas={streamsRemotas}
@@ -53,6 +71,9 @@ export default function Home() {
           onEnviarMensagem={handleEnviarMensagem}
           onCompartilhar={handleCompartilhar}
           onPararCompartilhamento={handlePararCompartilhamento}
+          onPararDe={handlePararDe}
+          onExpulsar={handleExpulsar}
+          onSair={handleSair}
           chatAberto={chatAberto}
           onToggleChat={onToggleChat}
       />

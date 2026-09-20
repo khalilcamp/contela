@@ -4,14 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ResponseSala {
+public class ResponseSalaCriada {
 
-    private String salaId;
-    private List<ResponseIntegrante> participantes;
-    private String donoId;
+    private String id;
+    private String tokenDono;
 }

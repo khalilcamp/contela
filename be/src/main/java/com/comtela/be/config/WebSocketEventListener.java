@@ -1,6 +1,7 @@
 package com.comtela.be.config;
 
 import com.comtela.be.dto.ResponseSala;
+import com.comtela.be.seguranca.LimitadorTaxa;
 import com.comtela.be.service.SalaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,13 +18,18 @@ public class WebSocketEventListener {
 
     private final SalaService salaService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final LimitadorTaxa limitador;
 
     @EventListener
     public void aoDesconectar(SessionDisconnectEvent event) {
         SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.wrap(event.getMessage());
 
-        String salaId = (String) headerAccessor.getSessionAttributes().get("salaId");
         String integranteId = headerAccessor.getUser() != null ? headerAccessor.getUser().getName() : null;
+        limitador.esquecer("msg:" + event.getSessionId(), "senha:sessao:" + event.getSessionId(), "chat:" + integranteId);
+
+        String salaId = headerAccessor.getSessionAttributes() != null
+                ? (String) headerAccessor.getSessionAttributes().get("salaId")
+                : null;
 
         if (salaId == null || integranteId == null) {
             return;

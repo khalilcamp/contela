@@ -81,11 +81,13 @@ export class GerenciadorWebRTC {
         this.streamLocal = null;
 
         this.conexoes.forEach((conexao, peerId) => {
-            enviarSinal(this.client, this.salaId, {
-                tipo: 'compartilhamento-parado',
-                destinatarioId: peerId,
-                payload: null,
-            });
+            try {
+                enviarSinal(this.client, this.salaId, {
+                    tipo: 'compartilhamento-parado',
+                    destinatarioId: peerId,
+                    payload: null,
+                });
+            } catch {}
             conexao.close();
         });
         this.conexoes.clear();

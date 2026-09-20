@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Integrante } from '../types/sala';
-import { TileParticipante } from './TileParticipante';
+import { AcaoTile, TileParticipante } from './TileParticipante';
 
 interface GradeParticipantesProps {
     participantes: Integrante[];
     meuId: string | null;
+    acoesPara?: (participante: Integrante) => AcaoTile[];
 }
 
 const GAP = 16;
@@ -37,7 +38,7 @@ function calcularLayout(n: number, largura: number, altura: number) {
     return { colunas: melhorColunas, lado };
 }
 
-export function GradeParticipantes({ participantes, meuId }: GradeParticipantesProps) {
+export function GradeParticipantes({ participantes, meuId, acoesPara }: GradeParticipantesProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [layout, setLayout] = useState({ colunas: 1, lado: 0 });
 
@@ -70,6 +71,7 @@ export function GradeParticipantes({ participantes, meuId }: GradeParticipantesP
                                 id={p.id}
                                 nome={p.nome}
                                 meuId={meuId}
+                                acoes={acoesPara?.(p)}
                                 tamanhoAvatar={Math.min(160, Math.max(44, layout.lado * 0.5))}
                             />
                         </div>

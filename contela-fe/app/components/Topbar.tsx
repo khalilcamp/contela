@@ -1,22 +1,52 @@
+'use client';
+
+import { useState } from 'react';
 import { Integrante } from '../types/sala';
 import { Avatar } from './Avatar';
-import { IconChat } from './icons';
+import { IconChat, IconCopiar, IconSair } from './icons';
 
 interface TopbarProps {
     salaId: string;
     participantes: Integrante[];
+    souDono: boolean;
     chatAberto: boolean;
     onToggleChat: () => void;
+    onSair: () => void;
 }
 
-export function Topbar({ salaId, participantes, chatAberto, onToggleChat }: TopbarProps) {
+export function Topbar({ salaId, participantes, souDono, chatAberto, onToggleChat, onSair }: TopbarProps) {
+    const [copiado, setCopiado] = useState(false);
     const emAndamento = participantes.some((p) => p.compartilhando);
+
+    async function copiarConvite() {
+        const convite = window.location.protocol.startsWith('http')
+            ? `${window.location.origin}/?sala=${salaId}`
+            : salaId;
+        try {
+            await navigator.clipboard.writeText(convite);
+            setCopiado(true);
+            setTimeout(() => setCopiado(false), 2000);
+        } catch {}
+    }
 
     return (
         <div className="mx-3 mt-3 flex h-12 shrink-0 items-center gap-3 rounded-xl border border-line bg-ink-2/80 px-4 backdrop-blur-xl">
             <span className="font-display text-sm font-semibold tracking-tight text-paper">Contela</span>
             <span aria-hidden className="h-4 w-px bg-line" />
-            <span className="text-sm font-medium text-paper">{salaId}</span>
+            <button
+                onClick={copiarConvite}
+                title="Copiar convite"
+                className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm font-medium tabular-nums text-paper transition hover:bg-ink-3 focus-visible:outline-2 focus-visible:outline-signal"
+            >
+                {salaId}
+                {copiado ? (
+                    <span className="text-xs font-normal text-signal">Copiado</span>
+                ) : (
+                    <IconCopiar className="h-3.5 w-3.5 text-mute" />
+                )}
+            </button>
+
+            {souDono && <span className="text-xs text-signal">Anfitrião</span>}
 
             {emAndamento && (
                 <span className="flex items-center gap-1.5 rounded-md bg-live/15 px-2 py-0.5 text-xs font-medium text-live">
@@ -44,6 +74,15 @@ export function Topbar({ salaId, participantes, chatAberto, onToggleChat }: Topb
                     }`}
                 >
                     <IconChat className="h-4 w-4" />
+                </button>
+
+                <button
+                    onClick={onSair}
+                    title="Sair da sala"
+                    aria-label="Sair da sala"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink-3 text-mute transition hover:bg-live hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-live"
+                >
+                    <IconSair className="h-4 w-4" />
                 </button>
             </div>
         </div>

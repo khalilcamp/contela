@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { SalaResponse, MensagemResponse } from '../types/sala';
+import { Integrante, SalaResponse, MensagemResponse } from '../types/sala';
 import { OpcoesCompartilhamento } from '../types/compartilhamento';
+import { Aviso } from '../components/Aviso';
 import { DrawerCompartilhamento } from '../components/DrawerCompartilhamento';
 import { Topbar } from '../components/Topbar';
 import { VideoStage } from '../components/VideoStage';
@@ -11,6 +12,9 @@ interface CompartilhamentoTelaProps {
     salaId: string;
     sala: SalaResponse | null;
     meuId: string | null;
+    souDono: boolean;
+    aviso: string | null;
+    onFecharAviso: () => void;
     compartilhando: boolean;
     streamLocal: MediaStream | null;
     streamsRemotas: Map<string, MediaStream>;
@@ -20,6 +24,9 @@ interface CompartilhamentoTelaProps {
     onEnviarMensagem: () => void;
     onCompartilhar: (opcoes: OpcoesCompartilhamento, fonteId: string | null) => void;
     onPararCompartilhamento: () => void;
+    onPararDe: (alvoId: string) => void;
+    onExpulsar: (alvoId: string) => void;
+    onSair: () => void;
     chatAberto: boolean;
     onToggleChat: () => void;
 }
@@ -28,6 +35,9 @@ export default function CompartilhamentoTela({
     salaId,
     sala,
     meuId,
+    souDono,
+    aviso,
+    onFecharAviso,
     compartilhando,
     streamLocal,
     streamsRemotas,
@@ -37,33 +47,54 @@ export default function CompartilhamentoTela({
     onEnviarMensagem,
     onCompartilhar,
     onPararCompartilhamento,
+    onPararDe,
+    onExpulsar,
+    onSair,
     chatAberto,
     onToggleChat,
 }: CompartilhamentoTelaProps) {
     const [drawerAberto, setDrawerAberto] = useState(false);
+    const participantes = sala?.participantes ?? [];
+    const outroCompartilhando = participantes.some((p) => p.compartilhando && p.id !== meuId);
+
+    const acoesPara = souDono
+        ? (p: Integrante) =>
+              p.id === meuId
+                  ? []
+                  : [
+                        ...(p.compartilhando ? [{ rotulo: 'Encerrar', onClick: () => onPararDe(p.id) }] : []),
+                        { rotulo: 'Remover', perigo: true, onClick: () => onExpulsar(p.id) },
+                    ]
+        : undefined;
 
     return (
         <div className="flex h-screen flex-col bg-ink text-paper">
             <Topbar
                 salaId={salaId}
-                participantes={sala?.participantes ?? []}
+                participantes={participantes}
+                souDono={souDono}
                 chatAberto={chatAberto}
                 onToggleChat={onToggleChat}
+                onSair={onSair}
             />
+
+            <Aviso mensagem={aviso} onFechar={onFecharAviso} />
 
             <div className="flex flex-1 overflow-hidden">
                 <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
                     <VideoStage
                         streamLocal={streamLocal}
                         meuId={meuId}
-                        participantes={sala?.participantes ?? []}
+                        participantes={participantes}
                         streamsRemotas={streamsRemotas}
+                        acoesPara={acoesPara}
                     />
 
                     <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
                         <div className="pointer-events-auto">
                             <ControlBar
                                 compartilhando={compartilhando}
+                                bloqueado={outroCompartilhando}
                                 onCompartilhar={() => setDrawerAberto(true)}
                                 onPararCompartilhamento={onPararCompartilhamento}
                             />

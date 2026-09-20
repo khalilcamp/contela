@@ -1,12 +1,13 @@
 import { Integrante } from '../types/sala';
-import { TileParticipante } from './TileParticipante';
+import { AcaoTile, TileParticipante } from './TileParticipante';
 
 interface TiraParticipantesProps {
     participantes: Integrante[];
     meuId: string | null;
+    acoesPara?: (participante: Integrante) => AcaoTile[];
 }
 
-export function TiraParticipantes({ participantes, meuId }: TiraParticipantesProps) {
+export function TiraParticipantes({ participantes, meuId, acoesPara }: TiraParticipantesProps) {
     return (
         <div className="flex shrink-0 gap-3 overflow-x-auto border-t border-line bg-ink px-4 py-3">
             {participantes.map((p) => (
@@ -16,6 +17,7 @@ export function TiraParticipantes({ participantes, meuId }: TiraParticipantesPro
                         nome={p.nome}
                         meuId={meuId}
                         compartilhando={p.compartilhando}
+                        acoes={acoesPara?.(p)}
                         tamanhoAvatar={48}
                     />
                 </div>

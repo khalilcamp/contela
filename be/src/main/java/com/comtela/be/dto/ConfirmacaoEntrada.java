@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 public class ConfirmacaoEntrada {
 
     private String meuId;
-
+    private String salaId;
 }

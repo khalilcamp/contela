@@ -4,35 +4,114 @@ import com.comtela.be.dto.ResponseIntegrante;
 import com.comtela.be.dto.ResponseMensagem;
 import com.comtela.be.dto.ResponseSala;
 import com.comtela.be.ent.Integrante;
-import com.comtela.be.ent.Mensagem;
 import com.comtela.be.ent.Sala;
+import com.comtela.be.seguranca.LimitadorTaxa;
+import com.comtela.be.seguranca.SenhaSala;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class SalaService {
 
     private static final int TAMANHO_MAXIMO_MENSAGEM = 2000;
+    private static final int TAMANHO_MAXIMO_NOME = 24;
+    private static final int TAMANHO_MINIMO_SENHA = 4;
+    private static final int TAMANHO_MAXIMO_SENHA = 64;
+    private static final int MAXIMO_SALAS = 200;
+    private static final int MAXIMO_PARTICIPANTES = 10;
+    private static final Duration VALIDADE_SALA_SEM_USO = Duration.ofMinutes(2);
+    private static final String ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final Pattern ID_CANONICO = Pattern.compile("^[A-Z0-9]{4}-[A-Z0-9]{4}$");
+    private static final Set<String> TIPOS_SINAL = Set.of("offer", "answer", "ice-candidate", "compartilhamento-parado");
 
     private final Map<String, Sala> salas = new ConcurrentHashMap<>();
+    private final SecureRandom aleatorio = new SecureRandom();
+    private final LimitadorTaxa limitador;
 
-    public Sala criarSalaSeNaoExistir(String salaId) {
-        return salas.computeIfAbsent(salaId, Sala::new);
+    public record SalaCriada(String id, String tokenDono) {
     }
 
-    public ResponseSala entrar(String salaId, String integranteId, String nome) {
-        Sala sala = criarSalaSeNaoExistir(salaId);
+    public static String normalizarId(String bruto) {
+        if (bruto == null) {
+            return "";
+        }
+        String limpo = bruto.toUpperCase().replaceAll("[^A-Z0-9]", "");
+        return limpo.length() == 8 ? limpo.substring(0, 4) + "-" + limpo.substring(4) : limpo;
+    }
 
-        Integrante integrante = new Integrante(integranteId, salaId, nome, false);
-        sala.getParticipantes().put(integranteId, integrante);
+    public static boolean ehIdCanonico(String id) {
+        return id != null && ID_CANONICO.matcher(id).matches();
+    }
 
-        return montarSalaResponse(sala);
+    public SalaCriada criarSala(String senha) {
+        String senhaValida = validarSenhaNova(senha);
+        removerSalasSemUso();
+
+        if (salas.size() >= MAXIMO_SALAS) {
+            throw new IllegalStateException("Limite de salas atingido. Tente novamente em instantes.");
+        }
+
+        byte[] salt = null;
+        byte[] hash = null;
+        if (senhaValida != null) {
+            salt = SenhaSala.gerarSalt();
+            hash = SenhaSala.hash(senhaValida, salt);
+        }
+
+        String token = gerarToken();
+        while (true) {
+            String id = gerarIdSala();
+            if (salas.putIfAbsent(id, new Sala(id, token, salt, hash)) == null) {
+                return new SalaCriada(id, token);
+            }
+        }
+    }
+
+    public ResponseSala entrar(String salaId, String integranteId, String sessaoId,
+                               String nomeBruto, String senha, String tokenDono) {
+        Sala sala = buscar(salaId);
+        String nome = validarNome(nomeBruto);
+
+        if (sala.temSenha()) {
+            conferirSenha(sala, sessaoId, senha);
+        }
+
+        synchronized (sala) {
+            if (salas.get(sala.getIdSala()) != sala) {
+                throw new IllegalStateException("Sala não encontrada. Confira o código.");
+            }
+            if (sala.getParticipantes().size() >= MAXIMO_PARTICIPANTES) {
+                throw new IllegalStateException("A sala está cheia.");
+            }
+            boolean nomeEmUso = sala.getParticipantes().values().stream()
+                    .anyMatch(i -> i.getNome().equalsIgnoreCase(nome));
+            if (nomeEmUso) {
+                throw new IllegalArgumentException("Já existe alguém com esse nome na sala. Escolha outro.");
+            }
+
+            sala.getParticipantes().put(integranteId,
+                    new Integrante(integranteId, sala.getIdSala(), nome, false, Instant.now()));
+
+            if (sala.getDonoId() == null && tokenConfere(sala, tokenDono)) {
+                sala.setDonoId(integranteId);
+            }
+            return montarSalaResponse(sala);
+        }
     }
 
     public ResponseSala sair(String salaId, String integranteId) {
@@ -41,21 +120,31 @@ public class SalaService {
             return null;
         }
 
-        sala.getParticipantes().remove(integranteId);
+        synchronized (sala) {
+            sala.getParticipantes().remove(integranteId);
 
-        if (sala.getParticipantes().isEmpty()) {
-            salas.remove(salaId);
-            return null;
+            if (sala.getParticipantes().isEmpty()) {
+                salas.remove(sala.getIdSala(), sala);
+                return null;
+            }
+            if (integranteId.equals(sala.getDonoId())) {
+                sala.setDonoId(participanteMaisAntigo(sala));
+            }
+            return montarSalaResponse(sala);
         }
+    }
 
-        return montarSalaResponse(sala);
+    public boolean pertence(String salaId, String integranteId) {
+        Sala sala = salas.get(salaId);
+        return sala != null && integranteId != null && sala.getParticipantes().containsKey(integranteId);
+    }
+
+    public ResponseSala estado(String salaId, String integranteId) {
+        return montarSalaResponse(exigirParticipante(salaId, integranteId));
     }
 
     public ResponseMensagem registrarMensagem(String salaId, String integranteId, String texto) {
-        Sala sala = salas.get(salaId);
-        if (sala == null) {
-            throw new IllegalStateException("Sala não encontrada: " + salaId);
-        }
+        Sala sala = exigirSala(salaId);
 
         Integrante autor = sala.getParticipantes().get(integranteId);
         if (autor == null) {
@@ -70,50 +159,186 @@ public class SalaService {
             throw new IllegalArgumentException("Mensagem excede o tamanho máximo de " + TAMANHO_MAXIMO_MENSAGEM + " caracteres");
         }
 
-        Mensagem mensagem = new Mensagem(
+        if (!limitador.permitir("chat:" + integranteId, 8, 10_000)) {
+            throw new IllegalStateException("Você está enviando mensagens rápido demais.");
+        }
+
+        return new ResponseMensagem(
                 UUID.randomUUID().toString(),
-                salaId,
                 integranteId,
                 autor.getNome(),
                 texto,
                 Instant.now()
         );
-
-        return new ResponseMensagem(
-                mensagem.getId(),
-                mensagem.getIntegranteId(),
-                mensagem.getNomeMembro(),
-                mensagem.getTexto(),
-                mensagem.getEnviadaEm()
-        );
     }
 
     public ResponseSala atualizarCompartilhamento(String salaId, String integranteId, boolean compartilhando) {
+        Sala sala = exigirParticipante(salaId, integranteId);
+
+        synchronized (sala) {
+            if (compartilhando) {
+                boolean outroCompartilhando = sala.getParticipantes().values().stream()
+                        .anyMatch(i -> i.isCompartilhandoTela() && !i.getId().equals(integranteId));
+                if (outroCompartilhando) {
+                    throw new IllegalStateException("Outra pessoa já está compartilhando a tela.");
+                }
+            }
+            sala.getParticipantes().get(integranteId).setCompartilhandoTela(compartilhando);
+            return montarSalaResponse(sala);
+        }
+    }
+
+    public void validarSinal(String salaId, String remetenteId, String destinatarioId, String tipo) {
+        if (tipo == null || !TIPOS_SINAL.contains(tipo)) {
+            throw new IllegalArgumentException("Sinal inválido.");
+        }
+        if (!pertence(salaId, remetenteId) || !pertence(salaId, destinatarioId)) {
+            throw new IllegalStateException("Destinatário não pertence à sala.");
+        }
+    }
+
+    public ResponseSala pararCompartilhamentoDe(String salaId, String solicitanteId, String alvoId) {
+        Sala sala = exigirDono(salaId, solicitanteId);
+
+        synchronized (sala) {
+            Integrante alvo = sala.getParticipantes().get(alvoId);
+            if (alvo == null) {
+                throw new IllegalStateException("Participante não encontrado.");
+            }
+            alvo.setCompartilhandoTela(false);
+            return montarSalaResponse(sala);
+        }
+    }
+
+    public ResponseSala removerComoDono(String salaId, String solicitanteId, String alvoId) {
+        Sala sala = exigirDono(salaId, solicitanteId);
+
+        if (solicitanteId.equals(alvoId)) {
+            throw new IllegalArgumentException("Você não pode remover a si mesmo.");
+        }
+
+        synchronized (sala) {
+            if (sala.getParticipantes().remove(alvoId) == null) {
+                throw new IllegalStateException("Participante não encontrado.");
+            }
+            return montarSalaResponse(sala);
+        }
+    }
+
+    private Sala buscar(String salaId) {
+        Sala sala = salas.get(normalizarId(salaId));
+        if (sala == null) {
+            throw new IllegalStateException("Sala não encontrada. Confira o código.");
+        }
+        return sala;
+    }
+
+    private Sala exigirSala(String salaId) {
         Sala sala = salas.get(salaId);
         if (sala == null) {
             throw new IllegalStateException("Sala não encontrada: " + salaId);
         }
+        return sala;
+    }
 
-        Integrante integrante = sala.getParticipantes().get(integranteId);
-        if (integrante == null) {
+    private Sala exigirParticipante(String salaId, String integranteId) {
+        Sala sala = exigirSala(salaId);
+        if (!sala.getParticipantes().containsKey(integranteId)) {
             throw new IllegalStateException("Integrante não pertence à sala");
         }
+        return sala;
+    }
 
-        if (compartilhando) {
-            sala.getParticipantes().values().forEach(i -> i.setCompartilhandoTela(false));
+    private Sala exigirDono(String salaId, String solicitanteId) {
+        Sala sala = exigirParticipante(salaId, solicitanteId);
+        if (!solicitanteId.equals(sala.getDonoId())) {
+            throw new IllegalStateException("Apenas o anfitrião pode fazer isso.");
+        }
+        return sala;
+    }
+
+    private void conferirSenha(Sala sala, String sessaoId, String senha) {
+        boolean dentroDoLimite = limitador.permitir("senha:sessao:" + sessaoId, 5, 60_000)
+                && limitador.permitir("senha:sala:" + sala.getIdSala(), 60, 60_000);
+        if (!dentroDoLimite) {
+            throw new IllegalStateException("Muitas tentativas de senha. Aguarde um minuto.");
         }
 
-        integrante.setCompartilhandoTela(compartilhando);
+        boolean correta = senha != null
+                && senha.length() <= TAMANHO_MAXIMO_SENHA
+                && MessageDigest.isEqual(SenhaSala.hash(senha, sala.getSenhaSalt()), sala.getSenhaHash());
+        if (!correta) {
+            throw new IllegalArgumentException("Senha incorreta.");
+        }
+    }
 
-        return montarSalaResponse(sala);
+    private boolean tokenConfere(Sala sala, String token) {
+        return token != null && MessageDigest.isEqual(token.getBytes(), sala.getTokenDono().getBytes());
+    }
+
+    private String validarNome(String bruto) {
+        if (bruto == null || bruto.isBlank()) {
+            throw new IllegalArgumentException("Informe seu nome.");
+        }
+        String nome = bruto.trim().replaceAll("\\s+", " ");
+        if (nome.length() > TAMANHO_MAXIMO_NOME) {
+            throw new IllegalArgumentException("O nome pode ter no máximo " + TAMANHO_MAXIMO_NOME + " caracteres.");
+        }
+        boolean invalido = nome.codePoints().anyMatch(c ->
+                Character.isISOControl(c) || Character.getType(c) == Character.FORMAT);
+        if (invalido) {
+            throw new IllegalArgumentException("O nome contém caracteres inválidos.");
+        }
+        return nome;
+    }
+
+    private String validarSenhaNova(String senha) {
+        if (senha == null || senha.isEmpty()) {
+            return null;
+        }
+        if (senha.length() < TAMANHO_MINIMO_SENHA || senha.length() > TAMANHO_MAXIMO_SENHA) {
+            throw new IllegalArgumentException(
+                    "A senha deve ter entre " + TAMANHO_MINIMO_SENHA + " e " + TAMANHO_MAXIMO_SENHA + " caracteres.");
+        }
+        return senha;
+    }
+
+    private void removerSalasSemUso() {
+        Instant limite = Instant.now().minus(VALIDADE_SALA_SEM_USO);
+        salas.values().removeIf(s -> s.getParticipantes().isEmpty() && s.getCriadaEm().isBefore(limite));
+    }
+
+    private String participanteMaisAntigo(Sala sala) {
+        return sala.getParticipantes().values().stream()
+                .min(Comparator.comparing(Integrante::getEntrouEm))
+                .map(Integrante::getId)
+                .orElse(null);
+    }
+
+    private String gerarIdSala() {
+        StringBuilder id = new StringBuilder();
+        for (int i = 0; i < 8; i++) {
+            if (i == 4) {
+                id.append('-');
+            }
+            id.append(ALFABETO.charAt(aleatorio.nextInt(ALFABETO.length())));
+        }
+        return id.toString();
+    }
+
+    private String gerarToken() {
+        byte[] bytes = new byte[24];
+        aleatorio.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private ResponseSala montarSalaResponse(Sala sala) {
         List<ResponseIntegrante> participantes = sala.getParticipantes().values().stream()
+                .sorted(Comparator.comparing(Integrante::getEntrouEm))
                 .map(i -> new ResponseIntegrante(i.getId(), i.getNome(), i.isCompartilhandoTela()))
                 .collect(Collectors.toList());
 
-        return new ResponseSala(sala.getIdSala(), participantes);
+        return new ResponseSala(sala.getIdSala(), participantes, sala.getDonoId());
     }
 
 }

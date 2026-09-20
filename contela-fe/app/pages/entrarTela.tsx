@@ -5,12 +5,28 @@ import { PromoLinkpet } from '../components/PromoLinkpet';
 interface EntrarTelaProps {
     nome: string;
     salaId: string;
+    senha: string;
+    erro: string | null;
+    entrando: boolean;
     onNomeChange: (valor: string) => void;
     onSalaIdChange: (valor: string) => void;
+    onSenhaChange: (valor: string) => void;
     onEntrar: () => void;
+    onCriar: () => void;
 }
 
-export default function EntrarTela({ nome, salaId, onNomeChange, onSalaIdChange, onEntrar }: EntrarTelaProps) {
+export default function EntrarTela({
+    nome,
+    salaId,
+    senha,
+    erro,
+    entrando,
+    onNomeChange,
+    onSalaIdChange,
+    onSenhaChange,
+    onEntrar,
+    onCriar,
+}: EntrarTelaProps) {
     return (
         <div
             className="grid min-h-screen text-paper lg:grid-cols-[1.1fr_1fr]"
@@ -41,9 +57,14 @@ export default function EntrarTela({ nome, salaId, onNomeChange, onSalaIdChange,
                     <FormularioSala
                         nome={nome}
                         salaId={salaId}
+                        senha={senha}
+                        erro={erro}
+                        entrando={entrando}
                         onNomeChange={onNomeChange}
                         onSalaIdChange={onSalaIdChange}
+                        onSenhaChange={onSenhaChange}
                         onEntrar={onEntrar}
+                        onCriar={onCriar}
                     />
                 </div>
 

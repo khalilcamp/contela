@@ -2,6 +2,7 @@ import { Integrante } from '../types/sala';
 import { corAvatar } from '../lib/avatar';
 import { Enquadramento } from './Enquadramento';
 import { GradeParticipantes } from './GradeParticipantes';
+import { AcaoTile } from './TileParticipante';
 import { TiraParticipantes } from './TiraParticipantes';
 
 interface VideoStageProps {
@@ -9,13 +10,14 @@ interface VideoStageProps {
     meuId: string | null;
     participantes: Integrante[];
     streamsRemotas: Map<string, MediaStream>;
+    acoesPara?: (participante: Integrante) => AcaoTile[];
 }
 
-export function VideoStage({ streamLocal, meuId, participantes, streamsRemotas }: VideoStageProps) {
+export function VideoStage({ streamLocal, meuId, participantes, streamsRemotas, acoesPara }: VideoStageProps) {
     const sharer = participantes.find((p) => p.compartilhando) ?? null;
 
     if (!sharer) {
-        return <GradeParticipantes participantes={participantes} meuId={meuId} />;
+        return <GradeParticipantes participantes={participantes} meuId={meuId} acoesPara={acoesPara} />;
     }
 
     const souEuQueCompartilho = sharer.id === meuId;
@@ -53,7 +55,7 @@ export function VideoStage({ streamLocal, meuId, participantes, streamsRemotas }
                 </Enquadramento>
             </div>
 
-            <TiraParticipantes participantes={participantes} meuId={meuId} />
+            <TiraParticipantes participantes={participantes} meuId={meuId} acoesPara={acoesPara} />
         </div>
     );
 }
