@@ -149,7 +149,8 @@ function criarJanela() {
         height: 800,
         minWidth: 800,
         minHeight: 600,
-        backgroundColor: '#0b0b0f',
+        backgroundColor: '#0c0d12',
+        icon: path.join(__dirname, 'icon.png'),
         autoHideMenuBar: true,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
