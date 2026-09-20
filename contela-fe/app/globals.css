@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #1e1f22;
-  --foreground: #f2f3f5;
+  --background: #0c0d12;
+  --foreground: #eceef5;
 }
 
 @theme inline {
@@ -12,25 +12,59 @@
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-bricolage);
 
-  --color-discord-bg: #313338;
-  --color-discord-bg-secondary: #2b2d31;
-  --color-discord-bg-tertiary: #1e1f22;
-  --color-discord-bg-hover: #3f4248;
-  --color-discord-bg-active: #404249;
-  --color-discord-border: #26272b;
-  --color-discord-text: #f2f3f5;
-  --color-discord-text-muted: #949ba4;
-  --color-discord-brand: #5865f2;
-  --color-discord-brand-hover: #4752c4;
-  --color-discord-green: #23a55a;
-  --color-discord-red: #f23f43;
-  --color-discord-red-hover: #da373c;
-
-  --color-lobby-border: #27282e;
-  --color-lobby-accent-soft: #8b93ff;
+  --color-ink: #0c0d12;
+  --color-ink-2: #12131a;
+  --color-ink-3: #1a1c25;
+  --color-line: rgba(255, 255, 255, 0.09);
+  --color-paper: #eceef5;
+  --color-mute: #8b8fa3;
+  --color-signal: #5eead4;
+  --color-signal-ink: #03211d;
+  --color-live: #ff5c5c;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+@keyframes enquadrar {
+  from {
+    opacity: 0.55;
+    transform: scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-enquadrar {
+  animation: enquadrar 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-enquadrar {
+    animation: none;
+  }
+}
+
+@keyframes flutuar {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.mascote-flutuar {
+  animation: flutuar 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascote-flutuar {
+    animation: none;
+  }
 }

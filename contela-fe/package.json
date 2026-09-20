@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "electron:dev": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:static": "cross-env ELECTRON=1 next build && electron . --static",
+    "electron:build": "cross-env ELECTRON=1 next build && electron-builder"
   },
   "dependencies": {
     "@stomp/stompjs": "^7.3.0",
@@ -21,9 +24,44 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/sockjs-client": "^1.5.4",
+    "concurrently": "^10.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^44.4.3",
+    "electron-builder": "^26.15.3",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^9.1.0"
+  },
+  "main": "electron/main.js",
+  "build": {
+    "appId": "com.contela.app",
+    "productName": "Contela",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/**/*",
+      "out/**/*",
+      "package.json"
+    ],
+    "protocols": [
+      {
+        "name": "Contela",
+        "schemes": [
+          "contela"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }

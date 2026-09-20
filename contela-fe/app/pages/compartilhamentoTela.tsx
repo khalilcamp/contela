@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { SalaResponse, MensagemResponse } from '../types/sala';
+import { OpcoesCompartilhamento } from '../types/compartilhamento';
+import { DrawerCompartilhamento } from '../components/DrawerCompartilhamento';
 import { Topbar } from '../components/Topbar';
 import { VideoStage } from '../components/VideoStage';
 import { ChatPanel } from '../components/ChatPanel';
@@ -15,7 +18,7 @@ interface CompartilhamentoTelaProps {
     texto: string;
     onTextoChange: (valor: string) => void;
     onEnviarMensagem: () => void;
-    onCompartilhar: () => void;
+    onCompartilhar: (opcoes: OpcoesCompartilhamento, fonteId: string | null) => void;
     onPararCompartilhamento: () => void;
     chatAberto: boolean;
     onToggleChat: () => void;
@@ -37,8 +40,10 @@ export default function CompartilhamentoTela({
     chatAberto,
     onToggleChat,
 }: CompartilhamentoTelaProps) {
+    const [drawerAberto, setDrawerAberto] = useState(false);
+
     return (
-        <div className="flex h-screen flex-col bg-black text-discord-text">
+        <div className="flex h-screen flex-col bg-ink text-paper">
             <Topbar
                 salaId={salaId}
                 participantes={sala?.participantes ?? []}
@@ -59,7 +64,7 @@ export default function CompartilhamentoTela({
                         <div className="pointer-events-auto">
                             <ControlBar
                                 compartilhando={compartilhando}
-                                onCompartilhar={onCompartilhar}
+                                onCompartilhar={() => setDrawerAberto(true)}
                                 onPararCompartilhamento={onPararCompartilhamento}
                             />
                         </div>
@@ -76,6 +81,15 @@ export default function CompartilhamentoTela({
                     />
                 )}
             </div>
+
+            <DrawerCompartilhamento
+                aberto={drawerAberto}
+                onFechar={() => setDrawerAberto(false)}
+                onIniciar={(opcoes, fonteId) => {
+                    setDrawerAberto(false);
+                    onCompartilhar(opcoes, fonteId);
+                }}
+            />
         </div>
     );
 }

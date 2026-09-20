@@ -1,5 +1,6 @@
 interface IconProps {
     className?: string;
+    style?: React.CSSProperties;
 }
 
 export function IconMonitor({ className }: IconProps) {
@@ -20,9 +21,9 @@ export function IconMonitorOff({ className }: IconProps) {
     );
 }
 
-export function IconCursor({ className }: IconProps) {
+export function IconCursor({ className, style }: IconProps) {
     return (
-        <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <svg viewBox="0 0 24 24" fill="currentColor" className={className} style={style}>
             <path d="M4 2.5 20 9.8l-6.9 1.6L10 18.9z" />
         </svg>
     );
@@ -66,6 +67,23 @@ export function IconSala({ className }: IconProps) {
     return (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
             <path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16" />
+        </svg>
+    );
+}
+
+export function IconFechar({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M6 6l12 12M18 6 6 18" />
+        </svg>
+    );
+}
+
+export function IconJanela({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M3 9h18" />
         </svg>
     );
 }

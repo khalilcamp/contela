@@ -1,5 +1,6 @@
 import { Integrante } from '../types/sala';
 import { corAvatar } from '../lib/avatar';
+import { Enquadramento } from './Enquadramento';
 import { GradeParticipantes } from './GradeParticipantes';
 import { TiraParticipantes } from './TiraParticipantes';
 
@@ -19,15 +20,11 @@ export function VideoStage({ streamLocal, meuId, participantes, streamsRemotas }
 
     const souEuQueCompartilho = sharer.id === meuId;
     const streamRemotaAtiva = !souEuQueCompartilho ? streamsRemotas.get(sharer.id) : undefined;
-    const cor = corAvatar(sharer.id);
 
     return (
-        <div className="flex flex-1 flex-col overflow-hidden bg-black">
-            <div className="relative flex flex-1 items-center justify-center overflow-hidden p-4">
-                <div
-                    className="relative h-full w-full overflow-hidden rounded-xl border-2 bg-[#0b0c0e]"
-                    style={{ borderColor: cor }}
-                >
+        <div className="flex flex-1 flex-col overflow-hidden bg-ink">
+            <div className="relative flex flex-1 items-center justify-center overflow-hidden p-6">
+                <Enquadramento className="h-full w-full bg-black">
                     {souEuQueCompartilho ? (
                         <video
                             autoPlay
@@ -47,13 +44,13 @@ export function VideoStage({ streamLocal, meuId, participantes, streamsRemotas }
                         />
                     )}
                     <span
-                        className="absolute bottom-3 left-3 rounded-full px-2.5 py-1 text-xs font-medium text-white shadow"
-                        style={{ backgroundColor: cor }}
+                        className="absolute bottom-3 left-3 rounded-md px-2.5 py-1 text-xs font-medium text-ink"
+                        style={{ backgroundColor: corAvatar(sharer.id) }}
                     >
                         {sharer.nome}
                         {souEuQueCompartilho ? ' (você)' : ''}
                     </span>
-                </div>
+                </Enquadramento>
             </div>
 
             <TiraParticipantes participantes={participantes} meuId={meuId} />

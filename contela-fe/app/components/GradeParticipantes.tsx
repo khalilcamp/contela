@@ -58,7 +58,7 @@ export function GradeParticipantes({ participantes, meuId }: GradeParticipantesP
     }, [participantes.length]);
 
     return (
-        <div className="flex flex-1 items-center justify-center overflow-hidden bg-black p-6">
+        <div className="flex flex-1 items-center justify-center overflow-hidden bg-ink p-6">
             <div ref={containerRef} className="flex h-full w-full items-center justify-center overflow-y-auto">
                 <div
                     className="grid"
@@ -70,7 +70,7 @@ export function GradeParticipantes({ participantes, meuId }: GradeParticipantesP
                                 id={p.id}
                                 nome={p.nome}
                                 meuId={meuId}
-                                tamanhoAvatar={Math.min(88, Math.max(28, layout.lado * 0.32))}
+                                tamanhoAvatar={Math.min(160, Math.max(44, layout.lado * 0.5))}
                             />
                         </div>
                     ))}

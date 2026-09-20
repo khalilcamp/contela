@@ -26,7 +26,7 @@ public class ConfigWebS implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/wsock")
-                .setAllowedOrigins(allowedOrigins)
+                .setAllowedOriginPatterns(allowedOrigins)
                 .setHandshakeHandler(new CustomHandshakeHandler())
                 .withSockJS();
     }

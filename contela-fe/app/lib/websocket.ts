@@ -2,11 +2,16 @@ import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { SalaResponse, MensagemResponse, SinalWebRTC } from '../types/sala';
 
-const WS_URL = 'http://localhost:8080/wsock';
+function obterWsUrl(): string {
+    if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
+    const { protocol, hostname } = window.location;
+    const host = protocol.startsWith('http') ? hostname : 'localhost';
+    return `http://${host}:8080/wsock`;
+}
 
 export function criarClienteStomp(): Client {
     return new Client({
-        webSocketFactory: () => new SockJS(WS_URL),
+        webSocketFactory: () => new SockJS(obterWsUrl()),
         reconnectDelay: 5000,
     });
 }

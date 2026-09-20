@@ -16,15 +16,11 @@ function formatarHora(iso: string): string {
 
 export function ChatPanel({ mensagens, texto, onTextoChange, onEnviar, meuId }: ChatPanelProps) {
     return (
-        <div className="my-3 mr-3 flex w-72 shrink-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] shadow-xl shadow-black/40 backdrop-blur-xl">
-            <div className="flex h-12 items-center border-b border-white/10 px-4 font-semibold text-discord-text">
-                Chat
-            </div>
+        <div className="my-3 mr-3 flex w-72 shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-ink-2/80 backdrop-blur-xl">
+            <div className="flex h-12 items-center border-b border-line px-4 font-display font-semibold text-paper">Chat</div>
 
-            <div className="flex-1 overflow-y-auto px-3 py-3">
-                {mensagens.length === 0 && (
-                    <p className="text-sm text-discord-text-muted">Nenhuma mensagem ainda.</p>
-                )}
+            <div className="flex-1 overflow-y-auto px-3 py-3 [scrollbar-color:rgba(255,255,255,0.18)_transparent] [scrollbar-width:thin]">
+                {mensagens.length === 0 && <p className="text-sm text-mute">Nenhuma mensagem ainda.</p>}
 
                 {mensagens.map((m, i) => {
                     const anterior = mensagens[i - 1];
@@ -40,36 +36,36 @@ export function ChatPanel({ mensagens, texto, onTextoChange, onEnviar, meuId }: 
                                 {!mesmoAutor && (
                                     <div className="flex items-baseline gap-2">
                                         <span
-                                            className="truncate text-sm font-semibold"
-                                            style={{ color: m.integranteId === meuId ? '#5865f2' : '#f2f3f5' }}
+                                            className={`truncate text-sm font-semibold ${
+                                                m.integranteId === meuId ? 'text-signal' : 'text-paper'
+                                            }`}
                                         >
                                             {m.nomeIntegrante}
                                         </span>
-                                        <span className="shrink-0 text-[11px] text-discord-text-muted">
-                                            {formatarHora(m.enviadaEm)}
-                                        </span>
+                                        <span className="shrink-0 text-[11px] text-mute">{formatarHora(m.enviadaEm)}</span>
                                     </div>
                                 )}
-                                <p className="break-words text-sm text-discord-text-muted">{m.texto}</p>
+                                <p className="break-words text-sm text-paper/75">{m.texto}</p>
                             </div>
                         </div>
                     );
                 })}
             </div>
 
-            <div className="border-t border-white/10 p-3">
-                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/25 py-1.5 pl-4 pr-1.5">
+            <div className="border-t border-line p-3">
+                <div className="flex items-center gap-2 rounded-lg border border-line bg-ink py-1.5 pl-3 pr-1.5 focus-within:border-signal">
                     <input
                         value={texto}
                         onChange={(e) => onTextoChange(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && onEnviar()}
-                        placeholder="Enviar mensagem..."
-                        className="min-w-0 flex-1 bg-transparent py-1 text-sm text-discord-text outline-none placeholder:text-discord-text-muted"
+                        placeholder="Enviar mensagem"
+                        className="min-w-0 flex-1 bg-transparent py-1 text-sm text-paper outline-none placeholder:text-mute"
                     />
                     <button
                         onClick={onEnviar}
                         disabled={!texto.trim()}
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-discord-brand text-white transition hover:bg-discord-brand-hover disabled:opacity-40"
+                        aria-label="Enviar"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-signal text-signal-ink transition hover:brightness-110 disabled:opacity-30"
                     >
                         <IconSend className="h-3.5 w-3.5" />
                     </button>

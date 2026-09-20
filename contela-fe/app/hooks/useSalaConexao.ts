@@ -1,10 +1,11 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import { criarClienteStomp, entrarNaSala, enviarMensagem, enviarStatusCompartilhamento } from '../lib/websocket';
 import { GerenciadorWebRTC } from '../lib/webrtc';
 import { SalaResponse, MensagemResponse } from '../types/sala';
+import { OpcoesCompartilhamento } from '../types/compartilhamento';
 
 export function useSalaConexao() {
     const clientRef = useRef<Client | null>(null);
@@ -27,8 +28,28 @@ export function useSalaConexao() {
     const [streamLocal, setStreamLocal] = useState<MediaStream | null>(null);
     const [chatAberto, setChatAberto] = useState(true);
 
+    useEffect(() => {
+        const daUrl = new URLSearchParams(window.location.search).get('sala');
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- le a URL so no cliente (evita hydration mismatch)
+        if (daUrl) setSalaId(daUrl);
+
+        const desktop = window.contela;
+        if (!desktop) return;
+        desktop.salaInicial().then((id) => id && setSalaId(id));
+        return desktop.aoReceberSala(setSalaId);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            webrtcRef.current?.pararCompartilhamento();
+            clientRef.current?.deactivate();
+            clientRef.current = null;
+        };
+    }, []);
+
     function handleEntrar() {
         if (!nome || !salaId) return;
+        if (clientRef.current) return;
 
         const client = criarClienteStomp();
 
@@ -96,7 +117,7 @@ export function useSalaConexao() {
         setTexto('');
     }
 
-    async function handleCompartilhar() {
+    async function handleCompartilhar(opcoes: OpcoesCompartilhamento, fonteId: string | null) {
         if (!webrtcRef.current || !sala || !clientRef.current) return;
 
         const outrosIds = sala.participantes
@@ -105,7 +126,7 @@ export function useSalaConexao() {
 
         let stream: MediaStream;
         try {
-            stream = await webrtcRef.current.iniciarCompartilhamento(outrosIds);
+            stream = await webrtcRef.current.iniciarCompartilhamento(outrosIds, opcoes, fonteId);
         } catch {
             return;
         }
