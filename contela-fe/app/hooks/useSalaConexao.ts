@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import {
+    buscarServidoresIce,
     criarClienteStomp,
     criarSala,
     entrarNaSala,
@@ -121,13 +122,16 @@ export function useSalaConexao() {
         webrtcRef.current?.processarSinalRecebido(sinal);
     }
 
-    function iniciarConexao(salaAlvo: string, tokenDono: string | null) {
+    async function iniciarConexao(salaAlvo: string, tokenDono: string | null) {
         if (clientRef.current) return;
 
         const client = criarClienteStomp();
         clientRef.current = client;
         limparErro();
         setEntrando(true);
+
+        const servidoresIce = await buscarServidoresIce();
+        if (clientRef.current !== client) return;
 
         client.onConnect = () => {
             entrarNaSala(client, salaAlvo, { nome, senha, tokenDono }, {
@@ -153,7 +157,8 @@ export function useSalaConexao() {
                                 novo.delete(peerId);
                                 return novo;
                             });
-                        }
+                        },
+                        servidoresIce
                     );
 
                     setConectado(true);

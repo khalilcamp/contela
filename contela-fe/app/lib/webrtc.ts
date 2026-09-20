@@ -8,15 +8,15 @@ import {
     construirConstraintsVideo,
 } from '../types/compartilhamento';
 
-const ICE_SERVERS: RTCConfiguration = {
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-};
+import { SERVIDORES_ICE_PADRAO } from './ice';
 
 export class GerenciadorWebRTC {
     private client: Client;
     private salaId: string;
     private meuId: string;
+    private servidoresIce: RTCIceServer[];
     private conexoes: Map<string, RTCPeerConnection> = new Map();
+    private candidatosPendentes: Map<string, RTCIceCandidateInit[]> = new Map();
     private filaSinais: Promise<void> = Promise.resolve();
     private streamLocal: MediaStream | null = null;
     private opcoes: OpcoesCompartilhamento = OPCOES_PADRAO;
@@ -29,11 +29,13 @@ export class GerenciadorWebRTC {
         salaId: string,
         meuId: string,
         onStreamRemota: (peerId: string, stream: MediaStream) => void,
-        onCompartilhamentoParado: (peerId: string) => void
+        onCompartilhamentoParado: (peerId: string) => void,
+        servidoresIce: RTCIceServer[] = SERVIDORES_ICE_PADRAO
     ) {
         this.client = client;
         this.salaId = salaId;
         this.meuId = meuId;
+        this.servidoresIce = servidoresIce;
         this.onStreamRemota = onStreamRemota;
         this.onCompartilhamentoParado = onCompartilhamentoParado;
     }
@@ -91,6 +93,7 @@ export class GerenciadorWebRTC {
             conexao.close();
         });
         this.conexoes.clear();
+        this.candidatosPendentes.clear();
     }
 
     processarSinalRecebido(sinal: SinalWebRTC): Promise<void> {
@@ -104,6 +107,7 @@ export class GerenciadorWebRTC {
         if (sinal.tipo === 'compartilhamento-parado') {
             this.conexoes.get(sinal.remetenteId)?.close();
             this.conexoes.delete(sinal.remetenteId);
+            this.candidatosPendentes.delete(sinal.remetenteId);
             this.onCompartilhamentoParado(sinal.remetenteId);
             return;
         }
@@ -113,6 +117,7 @@ export class GerenciadorWebRTC {
         if (sinal.tipo === 'offer') {
             if (conexao.signalingState !== 'stable') return;
             await conexao.setRemoteDescription(sinal.payload as RTCSessionDescriptionInit);
+            await this.aplicarCandidatosPendentes(sinal.remetenteId, conexao);
             const answer = await conexao.createAnswer();
             await conexao.setLocalDescription(answer);
 
@@ -126,10 +131,31 @@ export class GerenciadorWebRTC {
         if (sinal.tipo === 'answer') {
             if (conexao.signalingState !== 'have-local-offer') return;
             await conexao.setRemoteDescription(sinal.payload as RTCSessionDescriptionInit);
+            await this.aplicarCandidatosPendentes(sinal.remetenteId, conexao);
         }
 
         if (sinal.tipo === 'ice-candidate') {
-            await conexao.addIceCandidate(sinal.payload as RTCIceCandidateInit);
+            const candidato = sinal.payload as RTCIceCandidateInit;
+            if (!conexao.remoteDescription) {
+                const fila = this.candidatosPendentes.get(sinal.remetenteId) ?? [];
+                fila.push(candidato);
+                this.candidatosPendentes.set(sinal.remetenteId, fila);
+                return;
+            }
+            await conexao.addIceCandidate(candidato);
+        }
+    }
+
+    private async aplicarCandidatosPendentes(peerId: string, conexao: RTCPeerConnection) {
+        const fila = this.candidatosPendentes.get(peerId);
+        if (!fila) return;
+        this.candidatosPendentes.delete(peerId);
+        for (const candidato of fila) {
+            try {
+                await conexao.addIceCandidate(candidato);
+            } catch (erro) {
+                console.warn('Candidato ICE ignorado:', erro);
+            }
         }
     }
 
@@ -171,7 +197,7 @@ export class GerenciadorWebRTC {
         const existente = this.conexoes.get(peerId);
         if (existente) return existente;
 
-        const conexao = new RTCPeerConnection(ICE_SERVERS);
+        const conexao = new RTCPeerConnection({ iceServers: this.servidoresIce });
 
         conexao.onicecandidate = (event) => {
             if (event.candidate) {

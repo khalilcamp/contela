@@ -1,6 +1,7 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { SalaResponse, MensagemResponse, SinalWebRTC } from '../types/sala';
+import { SERVIDORES_ICE_PADRAO } from './ice';
 
 function obterWsUrl(): string {
     if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
@@ -40,6 +41,21 @@ export async function criarSala(senha: string): Promise<SalaCriada> {
         throw new Error(dados?.mensagem ?? 'Não foi possível criar a sala.');
     }
     return dados as SalaCriada;
+}
+
+export async function buscarServidoresIce(): Promise<RTCIceServer[]> {
+    const controlador = new AbortController();
+    const limite = setTimeout(() => controlador.abort(), 4000);
+    try {
+        const resposta = await fetch(`${obterApiUrl()}/api/ice`, { signal: controlador.signal });
+        if (!resposta.ok) return SERVIDORES_ICE_PADRAO;
+        const dados = await resposta.json();
+        return Array.isArray(dados?.iceServers) && dados.iceServers.length > 0 ? dados.iceServers : SERVIDORES_ICE_PADRAO;
+    } catch {
+        return SERVIDORES_ICE_PADRAO;
+    } finally {
+        clearTimeout(limite);
+    }
 }
 
 export function criarClienteStomp(): Client {
