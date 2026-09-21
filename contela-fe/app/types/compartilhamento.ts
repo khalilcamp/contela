@@ -5,12 +5,14 @@ export interface OpcoesCompartilhamento {
     resolucao: Resolucao;
     fps: TaxaQuadros;
     audio: boolean;
+    apenasAudio: boolean;
 }
 
 export const OPCOES_PADRAO: OpcoesCompartilhamento = {
     resolucao: '1080p',
     fps: 30,
     audio: true,
+    apenasAudio: false,
 };
 
 export interface FonteCaptura {

@@ -68,3 +68,25 @@ body {
     animation: none;
   }
 }
+
+@keyframes equalizar {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.equalizador-barra {
+  transform-origin: bottom;
+  animation: equalizar 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .equalizador-barra {
+    animation: none;
+    transform: scaleY(0.6);
+  }
+}

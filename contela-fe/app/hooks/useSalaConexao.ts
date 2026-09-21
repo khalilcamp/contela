@@ -15,7 +15,7 @@ import {
     pararCompartilhamentoDe,
 } from '../lib/websocket';
 import { DiagnosticoPeer } from '../lib/diagnostico';
-import { GerenciadorWebRTC } from '../lib/webrtc';
+import { ERRO_SEM_AUDIO, GerenciadorWebRTC } from '../lib/webrtc';
 import { SalaResponse, MensagemResponse, SinalWebRTC } from '../types/sala';
 import { OpcoesCompartilhamento } from '../types/compartilhamento';
 
@@ -303,11 +303,14 @@ export function useSalaConexao() {
         let stream: MediaStream;
         try {
             stream = await gerenciador.iniciarCompartilhamento(outrosIds, opcoes, fonteId);
-        } catch {
+        } catch (erro) {
+            if (erro instanceof Error && erro.message === ERRO_SEM_AUDIO) {
+                mostrarErro('Nenhum áudio foi compartilhado. Marque a opção de compartilhar o áudio no seletor do navegador.');
+            }
             return;
         }
 
-        setStreamLocal(stream);
+        setStreamLocal(opcoes.apenasAudio ? new MediaStream(stream.getAudioTracks()) : stream);
         enviarStatusCompartilhamento(clientRef.current, salaIdAtualRef.current, true);
         compartilhandoRef.current = true;
         setCompartilhando(true);

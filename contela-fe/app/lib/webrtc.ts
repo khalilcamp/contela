@@ -11,6 +11,9 @@ import {
 import { AudioJanela } from './audioJanela';
 import { DiagnosticoPeer } from './diagnostico';
 import { SERVIDORES_ICE_PADRAO } from './ice';
+import { pedirOpusEstereo, sdpTemOpusEstereo } from './opus';
+
+export const ERRO_SEM_AUDIO = 'SEM_AUDIO';
 
 type Estatistica = Record<string, unknown>;
 
@@ -80,9 +83,22 @@ export class GerenciadorWebRTC {
             else this.audioDeJanelaFalhou = true;
         }
 
+        if (opcoes.apenasAudio && this.streamLocal.getAudioTracks().length === 0) {
+            this.streamLocal.getTracks().forEach((track) => track.stop());
+            this.audioJanela?.encerrar();
+            this.audioJanela = null;
+            this.streamLocal = null;
+            throw new Error(ERRO_SEM_AUDIO);
+        }
+
         this.streamLocal.getVideoTracks().forEach((track) => {
             track.contentHint = opcoes.fps === 60 ? 'motion' : 'detail';
         });
+        if (opcoes.apenasAudio) {
+            this.streamLocal.getAudioTracks().forEach((track) => {
+                track.contentHint = 'music';
+            });
+        }
 
         for (const peerId of participantesIds) {
             if (peerId === this.meuId) continue;
@@ -155,8 +171,8 @@ export class GerenciadorWebRTC {
 
             itens.forEach((item) => {
                 if (item.type === 'transport') idDoPar = texto(item.selectedCandidatePairId) ?? idDoPar;
-                if (item.type === 'inbound-rtp' && item.kind === 'video') entrada = item;
-                if (item.type === 'outbound-rtp' && item.kind === 'video') saida = item;
+                if (item.type === 'inbound-rtp' && (item.kind === 'video' || (item.kind === 'audio' && !entrada))) entrada = item;
+                if (item.type === 'outbound-rtp' && (item.kind === 'video' || (item.kind === 'audio' && !saida))) saida = item;
             });
 
             if (idDoPar) parEscolhido = itens.get(idDoPar) ?? null;
@@ -240,6 +256,7 @@ export class GerenciadorWebRTC {
             await conexao.setRemoteDescription(sinal.payload as RTCSessionDescriptionInit);
             await this.aplicarCandidatosPendentes(sinal.remetenteId, conexao);
             const answer = await conexao.createAnswer();
+            if (sdpTemOpusEstereo((sinal.payload as RTCSessionDescriptionInit).sdp)) answer.sdp = pedirOpusEstereo(answer.sdp);
             await conexao.setLocalDescription(answer);
 
             enviarSinal(this.client, this.salaId, {
@@ -284,11 +301,13 @@ export class GerenciadorWebRTC {
         const conexao = this.obterOuCriarConexao(peerId);
         if (conexao.signalingState !== 'stable') return;
 
-        this.streamLocal?.getTracks().forEach((track) => {
+        const faixas = this.opcoes.apenasAudio ? this.streamLocal?.getAudioTracks() : this.streamLocal?.getTracks();
+        faixas?.forEach((track) => {
             conexao.addTrack(track, this.streamLocal!);
         });
 
         const offer = await conexao.createOffer();
+        if (this.opcoes.apenasAudio) offer.sdp = pedirOpusEstereo(offer.sdp);
         await conexao.setLocalDescription(offer);
         await this.limitarBitrate(conexao);
 

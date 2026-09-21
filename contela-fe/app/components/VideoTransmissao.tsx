@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { IconMudo, IconTelaCheia, IconVolume } from './icons';
+import { Mascote } from './Mascote';
 
 interface VideoTransmissaoProps {
     stream: MediaStream | null;
@@ -28,6 +29,19 @@ export function VideoTransmissao({ stream, mudo, controles = false, className }:
     const recipienteRef = useRef<HTMLDivElement>(null);
     const [volume, setVolume] = useState(lerVolumeSalvo);
     const [silenciado, setSilenciado] = useState(false);
+    const [temVideo, setTemVideo] = useState(true);
+
+    useEffect(() => {
+        if (!stream) return;
+        const atualizar = () => setTemVideo(stream.getVideoTracks().length > 0);
+        atualizar();
+        stream.addEventListener('addtrack', atualizar);
+        stream.addEventListener('removetrack', atualizar);
+        return () => {
+            stream.removeEventListener('addtrack', atualizar);
+            stream.removeEventListener('removetrack', atualizar);
+        };
+    }, [stream]);
 
     useEffect(() => {
         const video = ref.current;
@@ -58,7 +72,8 @@ export function VideoTransmissao({ stream, mudo, controles = false, className }:
 
     return (
         <div ref={recipienteRef} className="group relative h-full w-full bg-black">
-            <video ref={ref} autoPlay muted={mudo || silenciado} playsInline className={className} />
+            <video ref={ref} autoPlay muted={mudo || silenciado} playsInline className={temVideo ? className : 'hidden'} />
+            {stream && !temVideo && <SomenteAudio />}
 
             {controles && (
                 <div className="absolute bottom-3 right-3 flex items-center gap-2 rounded-lg bg-black/70 px-2.5 py-1.5 text-paper opacity-0 backdrop-blur-sm transition focus-within:opacity-100 group-hover:opacity-100">
@@ -80,6 +95,7 @@ export function VideoTransmissao({ stream, mudo, controles = false, className }:
                         aria-label="Volume"
                         className="h-1 w-24 cursor-pointer accent-[#5eead4]"
                     />
+                    {temVideo && (
                     <button
                         onClick={alternarTelaCheia}
                         aria-label="Tela cheia"
@@ -88,8 +104,27 @@ export function VideoTransmissao({ stream, mudo, controles = false, className }:
                     >
                         <IconTelaCheia className="h-4 w-4" />
                     </button>
+                    )}
                 </div>
             )}
+        </div>
+    );
+}
+
+function SomenteAudio() {
+    return (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-ink">
+            <Mascote acento="#5eead4" estagioVisual={2} className="h-28 w-28" />
+            <div aria-hidden className="flex h-8 items-end gap-1.5">
+                {[0, 0.25, 0.5, 0.15, 0.4].map((atraso, i) => (
+                    <span
+                        key={i}
+                        className="equalizador-barra h-full w-1.5 rounded-full bg-signal"
+                        style={{ animationDelay: `${atraso}s` }}
+                    />
+                ))}
+            </div>
+            <p className="text-sm text-mute">Só o áudio está sendo transmitido</p>
         </div>
     );
 }

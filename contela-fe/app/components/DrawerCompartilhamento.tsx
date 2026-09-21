@@ -75,10 +75,10 @@ export function DrawerCompartilhamento({ aberto, onFechar, onIniciar }: DrawerCo
     const telas = filtradas.filter((f) => f.tipo === 'screen');
     const janelas = filtradas.filter((f) => f.tipo === 'window');
 
-    const podeIniciar = !desktop || selecionada !== null;
     const janelaSelecionada = desktop && selecionada?.tipo === 'window';
     const audioIndisponivel = janelaSelecionada && !window.contela?.audioPorJanela;
-    const audioAtivo = opcoes.audio && !audioIndisponivel;
+    const podeIniciar = (!desktop || selecionada !== null) && !(opcoes.apenasAudio && audioIndisponivel);
+    const audioAtivo = (opcoes.audio || opcoes.apenasAudio) && !audioIndisponivel;
     const rotuloAudio = !desktop ? 'Áudio' : janelaSelecionada ? 'Áudio da janela' : 'Áudio do sistema';
     const detalheAudio = audioIndisponivel
         ? 'Indisponível para janelas neste sistema. Compartilhe a tela inteira para incluir o som.'
@@ -88,7 +88,9 @@ export function DrawerCompartilhamento({ aberto, onFechar, onIniciar }: DrawerCo
             ? 'Todo o som do computador.'
             : null;
     const mbps = (calcularBitrateMaximo(opcoes) / 1_000_000).toFixed(1).replace('.', ',');
-    const resumo = `${RESOLUCOES.find((r) => r.valor === opcoes.resolucao)?.rotulo} a ${opcoes.fps} fps, até ${mbps} Mbps`;
+    const resumo = opcoes.apenasAudio
+        ? 'Só áudio, estéreo, até 128 kbps'
+        : `${RESOLUCOES.find((r) => r.valor === opcoes.resolucao)?.rotulo} a ${opcoes.fps} fps, até ${mbps} Mbps`;
 
     return (
         <>
@@ -162,39 +164,42 @@ export function DrawerCompartilhamento({ aberto, onFechar, onIniciar }: DrawerCo
                     )}
 
                     <section className="shrink-0 space-y-4 border-t border-line pt-4">
-                        <Regua
-                            titulo="Resolução"
-                            opcoes={RESOLUCOES}
-                            valor={opcoes.resolucao}
-                            onChange={(resolucao) => setOpcoes((o) => ({ ...o, resolucao }))}
-                        />
-                        <Regua
-                            titulo="Quadros por segundo"
-                            dica={opcoes.fps === 60 ? 'Mais fluido, bom para jogos e vídeo' : 'Mais nítido, bom para texto e código'}
-                            opcoes={TAXAS}
-                            valor={opcoes.fps}
-                            onChange={(fps) => setOpcoes((o) => ({ ...o, fps }))}
+                        <Interruptor
+                            rotulo="Só o áudio"
+                            detalhe={
+                                opcoes.apenasAudio && audioIndisponivel
+                                    ? 'Indisponível para janelas neste sistema. Escolha uma tela inteira.'
+                                    : 'Transmite o som sem mostrar a imagem. Bom para música e jogos.'
+                            }
+                            marcado={opcoes.apenasAudio}
+                            onChange={(apenasAudio) => setOpcoes((o) => ({ ...o, apenasAudio }))}
                         />
 
-                        <label
-                            className={`flex items-center justify-between gap-4 ${
-                                audioIndisponivel ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-                            }`}
-                        >
-                            <span>
-                                <span className="block text-sm text-paper">{rotuloAudio}</span>
-                                {detalheAudio && <span className="block text-xs text-mute">{detalheAudio}</span>}
-                            </span>
-                            <input
-                                type="checkbox"
-                                role="switch"
-                                disabled={audioIndisponivel}
-                                checked={audioAtivo}
-                                onChange={(e) => setOpcoes((o) => ({ ...o, audio: e.target.checked }))}
-                                className="peer sr-only"
-                            />
-                            <span className="relative h-5 w-9 shrink-0 rounded-full border border-line bg-ink-3 transition peer-checked:border-signal peer-checked:bg-signal peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-signal after:absolute after:left-0.5 after:top-0.5 after:h-3.5 after:w-3.5 after:rounded-full after:bg-mute after:transition peer-checked:after:translate-x-4 peer-checked:after:bg-signal-ink motion-reduce:transition-none motion-reduce:after:transition-none" />
-                        </label>
+                        {!opcoes.apenasAudio && (
+                            <>
+                                <Regua
+                                    titulo="Resolução"
+                                    opcoes={RESOLUCOES}
+                                    valor={opcoes.resolucao}
+                                    onChange={(resolucao) => setOpcoes((o) => ({ ...o, resolucao }))}
+                                />
+                                <Regua
+                                    titulo="Quadros por segundo"
+                                    dica={opcoes.fps === 60 ? 'Mais fluido, bom para jogos e vídeo' : 'Mais nítido, bom para texto e código'}
+                                    opcoes={TAXAS}
+                                    valor={opcoes.fps}
+                                    onChange={(fps) => setOpcoes((o) => ({ ...o, fps }))}
+                                />
+
+                                <Interruptor
+                                    rotulo={rotuloAudio}
+                                    detalhe={detalheAudio}
+                                    marcado={audioAtivo}
+                                    desativado={audioIndisponivel}
+                                    onChange={(audio) => setOpcoes((o) => ({ ...o, audio }))}
+                                />
+                            </>
+                        )}
                     </section>
                 </div>
 
@@ -213,7 +218,7 @@ export function DrawerCompartilhamento({ aberto, onFechar, onIniciar }: DrawerCo
                             className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-signal px-4 py-2.5 text-sm font-semibold text-signal-ink transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal disabled:cursor-not-allowed disabled:opacity-40"
                         >
                             <IconMonitor className="h-4 w-4" />
-                            Transmitir
+                            {opcoes.apenasAudio ? 'Transmitir áudio' : 'Transmitir'}
                         </button>
                     </div>
                 </footer>
@@ -330,5 +335,41 @@ function Regua<T extends string | number>({
                 </div>
             </div>
         </div>
+    );
+}
+
+function Interruptor({
+    rotulo,
+    detalhe,
+    marcado,
+    desativado = false,
+    onChange,
+}: {
+    rotulo: string;
+    detalhe?: string | null;
+    marcado: boolean;
+    desativado?: boolean;
+    onChange: (valor: boolean) => void;
+}) {
+    return (
+        <label
+            className={`flex items-center justify-between gap-4 ${
+                desativado ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+            }`}
+        >
+            <span>
+                <span className="block text-sm text-paper">{rotulo}</span>
+                {detalhe && <span className="block text-xs text-mute">{detalhe}</span>}
+            </span>
+            <input
+                type="checkbox"
+                role="switch"
+                disabled={desativado}
+                checked={marcado}
+                onChange={(e) => onChange(e.target.checked)}
+                className="peer sr-only"
+            />
+            <span className="relative h-5 w-9 shrink-0 rounded-full border border-line bg-ink-3 transition peer-checked:border-signal peer-checked:bg-signal peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-signal after:absolute after:left-0.5 after:top-0.5 after:h-3.5 after:w-3.5 after:rounded-full after:bg-mute after:transition peer-checked:after:translate-x-4 peer-checked:after:bg-signal-ink motion-reduce:transition-none motion-reduce:after:transition-none" />
+        </label>
     );
 }

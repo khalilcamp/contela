@@ -31,3 +31,9 @@ Parsing ecmascript source code failed
  GET /dev/atualizacao 200 in 297ms (next.js: 183ms, application-code: 114ms)
  GET /dev/atualizacao 200 in 56ms (next.js: 9ms, application-code: 47ms)
 ✓ Compiled in 89ms
+ GET /dev/atualizacao 200 in 36ms (next.js: 8ms, application-code: 27ms)
+ GET /dev/atualizacao 200 in 26ms (next.js: 3ms, application-code: 23ms)
+ GET /dev/atualizacao 200 in 21ms (next.js: 4ms, application-code: 17ms)
+✓ Compiled in 181ms
+ GET /dev/atualizacao 200 in 22ms (next.js: 3ms, application-code: 18ms)
+[?25h

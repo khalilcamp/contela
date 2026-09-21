@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 /dist-electron/
+
+# log do servidor de desenvolvimento
+next-dev.log
