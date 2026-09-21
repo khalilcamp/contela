@@ -75,7 +75,16 @@ app/
 
 Dá pra hospedar o front e o [backend](../be) separadamente (ex: [Render](https://render.com)). Antes de colocar no ar:
 
-- `WS_URL` em `app/lib/websocket.ts` — hoje aponta pra `http://localhost:8080/wsock`, precisa virar variável de ambiente.
-- O CORS do backend já é configurável (veja o [README do backend](../be)) — só falta apontar pro domínio real do frontend publicado.
+- Defina `NEXT_PUBLIC_WS_URL` (ex: `https://seu-backend.onrender.com/wsock`) na hora do build do front. Sem ela, o front tenta falar com o backend em `localhost:8080`.
+- No backend, `APP_CORS_ALLOWED_ORIGINS` precisa listar a origem do front (e `app://contela` para o app desktop).
+- Para a transmissão funcionar entre redes diferentes, configure um servidor TURN no backend com `APP_ICE_TURN_URLS`, `APP_ICE_TURN_USERNAME` e `APP_ICE_TURN_CREDENTIAL`.
 
-Sem o `WS_URL` correto, o front em produção não consegue falar com o backend em produção.
+## Privacidade e segurança
+
+- Nada é gravado: vídeo, áudio e mensagens do chat não ficam salvos no servidor. Não há cadastro, e o servidor só conhece o apelido e o código da sala enquanto a pessoa está nela.
+- Cada sala tem um código aleatório e, opcionalmente, uma senha (sugerida por padrão ao criar a sala). O anfitrião pode remover pessoas e encerrar a transmissão de alguém.
+- A hospedagem do servidor e os servidores STUN/TURN enxergam o endereço IP de quem se conecta, e os participantes de uma sala podem ver o IP uns dos outros pela conexão direta.
+- O Contela não é direcionado a crianças e adolescentes. Responsáveis: prefiram salas com senha, criadas por alguém que vocês conheçam.
+- **Denúncias e pedidos de ajuda:** linkpetprofessional@gmail.com. Informe o código da sala, o dia e o horário e o que aconteceu. Em risco imediato, ligue 190 (polícia) ou 192 (SAMU); para violações contra crianças e adolescentes, também há o Disque 100 e a SaferNet Brasil.
+
+Os mesmos avisos aparecem dentro do app, em "Privacidade, segurança e denúncias".

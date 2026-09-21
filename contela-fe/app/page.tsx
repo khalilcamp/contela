@@ -57,6 +57,7 @@ export default function Home() {
   return (
       <CompartilhamentoTela
           salaId={salaId}
+          senhaSala={senha}
           sala={sala}
           meuId={meuId}
           souDono={souDono}

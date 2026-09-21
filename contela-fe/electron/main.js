@@ -26,7 +26,7 @@ function urlConfiavel(url) {
 function abrirExterno(url) {
     try {
         const u = new URL(url);
-        if (u.protocol === 'https:' || u.protocol === 'http:') shell.openExternal(u.toString());
+        if (['https:', 'http:', 'mailto:'].includes(u.protocol)) shell.openExternal(u.toString());
     } catch {}
 }
 

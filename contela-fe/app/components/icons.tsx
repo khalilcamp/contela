@@ -97,6 +97,15 @@ export function IconSair({ className }: IconProps) {
     );
 }
 
+export function IconEscudo({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" />
+            <path d="M9.5 12l2 2 3.5-4" />
+        </svg>
+    );
+}
+
 export function IconJanela({ className }: IconProps) {
     return (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>

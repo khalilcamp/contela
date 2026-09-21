@@ -79,12 +79,12 @@ export interface EventosSala {
     onMensagem: (mensagem: MensagemResponse) => void;
     onSinal: (sinal: SinalWebRTC) => void;
     onErro: (mensagem: string) => void;
-    onExpulso: () => void;
+    onExpulso: (motivo: string) => void;
 }
 
 export function entrarNaSala(client: Client, salaId: string, dados: DadosEntrada, eventos: EventosSala) {
     client.subscribe('/user/queue/erro', (message) => eventos.onErro(message.body));
-    client.subscribe('/user/queue/expulso', () => eventos.onExpulso());
+    client.subscribe('/user/queue/expulso', (message) => eventos.onExpulso(message.body));
     client.subscribe('/user/queue/sinal', (message) => eventos.onSinal(JSON.parse(message.body)));
 
     client.subscribe('/user/queue/confirmacao', (message) => {

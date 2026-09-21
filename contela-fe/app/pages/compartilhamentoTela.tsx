@@ -10,6 +10,7 @@ import { ControlBar } from '../components/ControlBar';
 
 interface CompartilhamentoTelaProps {
     salaId: string;
+    senhaSala: string;
     sala: SalaResponse | null;
     meuId: string | null;
     souDono: boolean;
@@ -33,6 +34,7 @@ interface CompartilhamentoTelaProps {
 
 export default function CompartilhamentoTela({
     salaId,
+    senhaSala,
     sala,
     meuId,
     souDono,
@@ -71,6 +73,7 @@ export default function CompartilhamentoTela({
         <div className="flex h-screen flex-col bg-ink text-paper">
             <Topbar
                 salaId={salaId}
+                senhaSala={senhaSala}
                 participantes={participantes}
                 souDono={souDono}
                 chatAberto={chatAberto}

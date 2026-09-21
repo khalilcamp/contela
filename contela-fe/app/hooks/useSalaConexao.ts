@@ -202,7 +202,12 @@ export function useSalaConexao() {
                     if (entradoRef.current) mostrarErro(mensagem);
                     else encerrarSessao(mensagem);
                 },
-                onExpulso: () => encerrarSessao('Você foi removido da sala pelo anfitrião.'),
+                onExpulso: (motivo) =>
+                    encerrarSessao(
+                        motivo === 'encerrada'
+                            ? 'Esta sala foi encerrada pela administração do Contela.'
+                            : 'Você foi removido da sala pelo anfitrião.'
+                    ),
             });
 
             temporizadorEntradaRef.current = setTimeout(() => {

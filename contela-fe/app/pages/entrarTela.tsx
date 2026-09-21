@@ -1,4 +1,7 @@
+import { useState } from 'react';
+import { DialogoSeguranca } from '../components/DialogoSeguranca';
 import FormularioSala from '../components/formularioSala';
+import { IconEscudo } from '../components/icons';
 import { MosaicoTelas } from '../components/MosaicoTelas';
 import { PromoLinkpet } from '../components/PromoLinkpet';
 
@@ -27,6 +30,8 @@ export default function EntrarTela({
     onEntrar,
     onCriar,
 }: EntrarTelaProps) {
+    const [segurancaAberta, setSegurancaAberta] = useState(false);
+
     return (
         <div
             className="grid min-h-screen text-paper lg:grid-cols-[1.1fr_1fr]"
@@ -66,10 +71,20 @@ export default function EntrarTela({
                         onEntrar={onEntrar}
                         onCriar={onCriar}
                     />
+                    <button
+                        type="button"
+                        onClick={() => setSegurancaAberta(true)}
+                        className="mt-5 flex items-center gap-2 text-xs text-mute transition hover:text-paper focus-visible:outline-2 focus-visible:outline-signal"
+                    >
+                        <IconEscudo className="h-4 w-4" />
+                        Privacidade, segurança e denúncias
+                    </button>
                 </div>
 
                 <PromoLinkpet className="mt-8 lg:hidden" />
             </div>
+
+            <DialogoSeguranca aberto={segurancaAberta} onFechar={() => setSegurancaAberta(false)} />
         </div>
     );
 }

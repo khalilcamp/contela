@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { IconSala, IconUsuario } from './icons';
+import { gerarSenha } from '../lib/senha';
+import { IconCopiar, IconSala, IconUsuario } from './icons';
 
 interface FormularioSalaProps {
     nome: string;
@@ -34,8 +35,28 @@ export default function FormularioSala({
     onCriar,
 }: FormularioSalaProps) {
     const [modo, setModo] = useState<Modo>('entrar');
+    const [proteger, setProteger] = useState(true);
+    const [senhaCopiada, setSenhaCopiada] = useState(false);
     const criando = modo === 'criar';
     const incompleto = !nome.trim() || (!criando && !salaId.trim());
+
+    function trocarModo(novo: Modo) {
+        setModo(novo);
+        onSenhaChange(novo === 'criar' && proteger ? gerarSenha() : '');
+    }
+
+    function alternarProteger(ativo: boolean) {
+        setProteger(ativo);
+        onSenhaChange(ativo ? gerarSenha() : '');
+    }
+
+    async function copiarSenha() {
+        try {
+            await navigator.clipboard.writeText(senha);
+            setSenhaCopiada(true);
+            setTimeout(() => setSenhaCopiada(false), 2000);
+        } catch {}
+    }
 
     return (
         <form
@@ -54,7 +75,7 @@ export default function FormularioSala({
                         type="button"
                         role="tab"
                         aria-selected={modo === opcao}
-                        onClick={() => setModo(opcao)}
+                        onClick={() => trocarModo(opcao)}
                         className={`-mb-px border-b-2 pb-2.5 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-signal ${
                             modo === opcao ? 'border-signal text-paper' : 'border-transparent text-mute hover:text-paper'
                         }`}
@@ -69,7 +90,7 @@ export default function FormularioSala({
             </h1>
             <p className="mt-2 text-sm text-mute">
                 {criando
-                    ? 'Você recebe um código para convidar quem quiser. Uma senha é opcional.'
+                    ? 'Você recebe um código para convidar quem quiser. Recomendamos proteger com senha.'
                     : 'Informe seu nome e o código que você recebeu.'}
             </p>
 
@@ -113,21 +134,70 @@ export default function FormularioSala({
                     </div>
                 )}
 
-                <div>
-                    <label htmlFor="senha" className="mb-1.5 block text-sm font-medium text-paper">
-                        {criando ? 'Senha da sala (opcional)' : 'Senha (se a sala tiver)'}
-                    </label>
-                    <input
-                        id="senha"
-                        type="password"
-                        className={`${CAMPO} pl-3.5`}
-                        placeholder={criando ? 'Deixe vazio para uma sala aberta' : 'Deixe vazio se não tiver'}
-                        maxLength={64}
-                        autoComplete="off"
-                        value={senha}
-                        onChange={(e) => onSenhaChange(e.target.value)}
-                    />
-                </div>
+                {criando ? (
+                    <div>
+                        <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-paper">
+                            <input
+                                type="checkbox"
+                                checked={proteger}
+                                onChange={(e) => alternarProteger(e.target.checked)}
+                                className="h-4 w-4 accent-[#5eead4]"
+                            />
+                            Proteger a sala com senha (recomendado)
+                        </label>
+
+                        {proteger && (
+                            <div className="mt-3">
+                                <div className="flex gap-2">
+                                    <input
+                                        id="senha"
+                                        aria-label="Senha da sala"
+                                        className={`${CAMPO} pl-3.5 font-mono tracking-wide`}
+                                        maxLength={64}
+                                        autoComplete="off"
+                                        spellCheck={false}
+                                        value={senha}
+                                        onChange={(e) => onSenhaChange(e.target.value)}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={copiarSenha}
+                                        title="Copiar senha"
+                                        aria-label="Copiar senha"
+                                        className="flex shrink-0 items-center gap-1.5 rounded-lg bg-ink-3 px-3 text-xs text-paper transition hover:bg-ink-3/70 focus-visible:outline-2 focus-visible:outline-signal"
+                                    >
+                                        <IconCopiar className="h-4 w-4 text-mute" />
+                                        {senhaCopiada ? 'Copiada' : 'Copiar'}
+                                    </button>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => onSenhaChange(gerarSenha())}
+                                    className="mt-2 text-xs text-mute underline-offset-4 transition hover:text-paper hover:underline focus-visible:outline-2 focus-visible:outline-signal"
+                                >
+                                    Gerar outra senha
+                                </button>
+                                <p className="mt-1 text-xs text-mute">Quem entrar precisa do código e desta senha.</p>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div>
+                        <label htmlFor="senha" className="mb-1.5 block text-sm font-medium text-paper">
+                            Senha (se a sala tiver)
+                        </label>
+                        <input
+                            id="senha"
+                            type="password"
+                            className={`${CAMPO} pl-3.5`}
+                            placeholder="Deixe vazio se não tiver"
+                            maxLength={64}
+                            autoComplete="off"
+                            value={senha}
+                            onChange={(e) => onSenhaChange(e.target.value)}
+                        />
+                    </div>
+                )}
 
                 {erro && (
                     <p role="alert" className="text-sm text-live">

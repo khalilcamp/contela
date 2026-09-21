@@ -68,5 +68,21 @@ src/main/java/com/comtela/be/
 
 Antes de subir em produção (ex: [Render](https://render.com)):
 
-- A origem liberada no CORS já é configurável via `app.cors.allowed-origins` em `application.properties` (ou variável de ambiente `APP_CORS_ALLOWED_ORIGINS`) — só trocar pelo domínio real do frontend publicado (aceita múltiplas origens separadas por vírgula).
-- O frontend também precisa apontar `WS_URL` pra URL pública deste backend em vez de `localhost:8080`.
+- A origem liberada no CORS é configurável via `app.cors.allowed-origins` (variável de ambiente `APP_CORS_ALLOWED_ORIGINS`): coloque o domínio real do front publicado e `app://contela` para o app desktop, separados por vírgula. Origens de rede local (LAN, VPN) ficam no profile `dev`.
+- O frontend precisa ser construído com `NEXT_PUBLIC_WS_URL` apontando para a URL pública deste backend (ex: `https://seu-backend.onrender.com/wsock`).
+- A porta vem da variável `PORT` (padrão `8080`). Há um `Dockerfile` na pasta.
+- Para a transmissão funcionar entre redes diferentes, configure um servidor TURN: `APP_ICE_TURN_URLS` (separadas por vírgula), `APP_ICE_TURN_USERNAME` e `APP_ICE_TURN_CREDENTIAL`. O front busca a configuração em `GET /api/ice`.
+
+## Encerrar uma sala denunciada
+
+Existe um endpoint de administração que derruba todos os participantes de **uma** sala e a apaga. As outras salas não são afetadas. Ele fica desligado até você definir a variável de ambiente `APP_ADMIN_CHAVE` com uma chave de pelo menos 16 caracteres (guarde-a só no painel do Render, nunca no repositório).
+
+```
+curl.exe -X POST https://seu-backend.onrender.com/api/admin/salas/ABCD-1234/encerrar -H "X-Admin-Chave: SUA_CHAVE"
+```
+
+- `200`: sala encerrada, com a quantidade de participantes derrubados. Quem estava nela vê o aviso "Esta sala foi encerrada pela administração do Contela".
+- `404`: sala não encontrada (código errado ou sala já vazia). Também é o retorno quando a chave de administração não está configurada.
+- `403`: chave inválida. Há limite de 10 tentativas por minuto por IP (`429`).
+
+Fechar a sala não impede a criação de outra com um código novo, porque o Contela não tem contas. Não há como banir uma pessoa.

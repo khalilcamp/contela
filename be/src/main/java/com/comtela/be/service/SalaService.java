@@ -14,6 +14,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
@@ -131,6 +132,20 @@ public class SalaService {
                 sala.setDonoId(participanteMaisAntigo(sala));
             }
             return montarSalaResponse(sala);
+        }
+    }
+
+    public List<String> encerrarSala(String salaIdBruto) {
+        Sala sala = salas.get(normalizarId(salaIdBruto));
+        if (sala == null) {
+            return null;
+        }
+
+        synchronized (sala) {
+            List<String> participantes = new ArrayList<>(sala.getParticipantes().keySet());
+            sala.getParticipantes().clear();
+            salas.remove(sala.getIdSala(), sala);
+            return participantes;
         }
     }
 

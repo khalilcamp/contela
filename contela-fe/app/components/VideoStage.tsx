@@ -4,6 +4,7 @@ import { Enquadramento } from './Enquadramento';
 import { GradeParticipantes } from './GradeParticipantes';
 import { AcaoTile } from './TileParticipante';
 import { TiraParticipantes } from './TiraParticipantes';
+import { VideoTransmissao } from './VideoTransmissao';
 
 interface VideoStageProps {
     streamLocal: MediaStream | null;
@@ -27,24 +28,11 @@ export function VideoStage({ streamLocal, meuId, participantes, streamsRemotas, 
         <div className="flex flex-1 flex-col overflow-hidden bg-ink">
             <div className="relative flex flex-1 items-center justify-center overflow-hidden p-6">
                 <Enquadramento className="h-full w-full bg-black">
-                    {souEuQueCompartilho ? (
-                        <video
-                            autoPlay
-                            muted
-                            className="h-full w-full object-contain"
-                            ref={(el) => {
-                                if (el && streamLocal) el.srcObject = streamLocal;
-                            }}
-                        />
-                    ) : (
-                        <video
-                            autoPlay
-                            className="h-full w-full object-contain"
-                            ref={(el) => {
-                                if (el && streamRemotaAtiva) el.srcObject = streamRemotaAtiva;
-                            }}
-                        />
-                    )}
+                    <VideoTransmissao
+                        stream={souEuQueCompartilho ? streamLocal : (streamRemotaAtiva ?? null)}
+                        mudo={souEuQueCompartilho}
+                        className="h-full w-full object-contain"
+                    />
                     <span
                         className="absolute bottom-3 left-3 rounded-md px-2.5 py-1 text-xs font-medium text-ink"
                         style={{ backgroundColor: corAvatar(sharer.id) }}
