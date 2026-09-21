@@ -2,6 +2,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { SalaResponse, MensagemResponse, SinalWebRTC } from '../types/sala';
 import { SERVIDORES_ICE_PADRAO } from './ice';
+import { VERSAO_APP, plataformaAtual } from './versao';
 
 function obterWsUrl(): string {
     if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
@@ -80,12 +81,19 @@ export interface EventosSala {
     onSinal: (sinal: SinalWebRTC) => void;
     onErro: (mensagem: string) => void;
     onExpulso: (motivo: string) => void;
+    onAviso: (aviso: AvisoVersao) => void;
+}
+
+export interface AvisoVersao {
+    versao: string;
+    url: string;
 }
 
 export function entrarNaSala(client: Client, salaId: string, dados: DadosEntrada, eventos: EventosSala) {
     client.subscribe('/user/queue/erro', (message) => eventos.onErro(message.body));
     client.subscribe('/user/queue/expulso', (message) => eventos.onExpulso(message.body));
     client.subscribe('/user/queue/sinal', (message) => eventos.onSinal(JSON.parse(message.body)));
+    client.subscribe('/user/queue/aviso', (message) => eventos.onAviso(JSON.parse(message.body)));
 
     client.subscribe('/user/queue/confirmacao', (message) => {
         const confirmacao = JSON.parse(message.body);
@@ -100,7 +108,13 @@ export function entrarNaSala(client: Client, salaId: string, dados: DadosEntrada
         if (!client.connected) return;
         client.publish({
             destination: `/app/sala/${salaId}/entrar`,
-            body: JSON.stringify({ nome: dados.nome, senha: dados.senha || null, tokenDono: dados.tokenDono }),
+            body: JSON.stringify({
+                nome: dados.nome,
+                senha: dados.senha || null,
+                tokenDono: dados.tokenDono,
+                versaoApp: VERSAO_APP,
+                plataforma: plataformaAtual(),
+            }),
         });
     }, 150);
 }

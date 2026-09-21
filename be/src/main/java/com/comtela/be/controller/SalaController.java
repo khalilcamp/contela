@@ -3,7 +3,9 @@ package com.comtela.be.controller;
 import com.comtela.be.dto.*;
 import com.comtela.be.seguranca.RegistroSessoes;
 import com.comtela.be.service.SalaService;
+import com.comtela.be.service.VersaoApp;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -23,6 +25,12 @@ import java.util.concurrent.TimeUnit;
 public class SalaController {
 
     private static final long ATRASO_FECHAMENTO_MS = 300;
+
+    @Value("${app.versao.atual:}")
+    private String versaoAtual;
+
+    @Value("${app.versao.url:https://github.com/khalilcamp/contela/releases/latest}")
+    private String urlDownload;
 
     private final SalaService salaService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -47,6 +55,12 @@ public class SalaController {
                 request.getNome(), request.getSenha(), request.getTokenDono());
 
         sessao.put("salaId", salaResponse.getSalaId());
+        if (VersaoApp.valida(request.getVersaoApp())) {
+            sessao.put("versaoApp", request.getVersaoApp());
+        }
+        if ("web".equals(request.getPlataforma()) || "desktop".equals(request.getPlataforma())) {
+            sessao.put("plataforma", request.getPlataforma());
+        }
         messagingTemplate.convertAndSendToUser(integranteId, "/queue/confirmacao",
                 new ConfirmacaoEntrada(integranteId, salaResponse.getSalaId()));
 
@@ -56,7 +70,28 @@ public class SalaController {
     @MessageMapping("/sala/{salaId}/sincronizar")
     @SendTo("/topic/sala/{salaId}/participantes")
     public ResponseSala sincronizar(@DestinationVariable String salaId, SimpMessageHeaderAccessor headerAccessor) {
-        return salaService.estado(salaId, headerAccessor.getUser().getName());
+        String integranteId = headerAccessor.getUser().getName();
+        ResponseSala estado = salaService.estado(salaId, integranteId);
+        avisarSobreVersao(integranteId, headerAccessor.getSessionAttributes());
+        return estado;
+    }
+
+    private void avisarSobreVersao(String integranteId, Map<String, Object> sessao) {
+        if (!VersaoApp.valida(versaoAtual)) {
+            return;
+        }
+
+        String versaoCliente = (String) sessao.get("versaoApp");
+        if (versaoCliente == null) {
+            messagingTemplate.convertAndSendToUser(integranteId, "/queue/erro",
+                    "Há uma nova versão do Contela (" + versaoAtual + "). Baixe em " + urlDownload);
+            return;
+        }
+
+        boolean ehWeb = "web".equals(sessao.get("plataforma"));
+        if (!ehWeb && VersaoApp.menor(versaoCliente, versaoAtual)) {
+            messagingTemplate.convertAndSendToUser(integranteId, "/queue/aviso", new AvisoVersao(versaoAtual, urlDownload));
+        }
     }
 
     @MessageMapping("/sala/{salaId}/chat")

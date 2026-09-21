@@ -23,7 +23,7 @@ public class InterceptadorSeguranca implements ChannelInterceptor {
     private static final Pattern ENVIO_SALA =
             Pattern.compile("^/app/sala/([^/]+)/(entrar|chat|compartilhar|sinal|sincronizar|parar|expulsar)$");
     private static final Set<String> FILAS_USUARIO =
-            Set.of("/user/queue/confirmacao", "/user/queue/sinal", "/user/queue/erro", "/user/queue/expulso");
+            Set.of("/user/queue/confirmacao", "/user/queue/sinal", "/user/queue/erro", "/user/queue/expulso", "/user/queue/aviso");
 
     private static final int MAXIMO_ENVIOS_POR_JANELA = 400;
     private static final long JANELA_MS = 10_000;

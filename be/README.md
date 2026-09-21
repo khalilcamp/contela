@@ -71,7 +71,20 @@ Antes de subir em produção (ex: [Render](https://render.com)):
 - A origem liberada no CORS é configurável via `app.cors.allowed-origins` (variável de ambiente `APP_CORS_ALLOWED_ORIGINS`): coloque o domínio real do front publicado e `app://contela` para o app desktop, separados por vírgula. Origens de rede local (LAN, VPN) ficam no profile `dev`.
 - O frontend precisa ser construído com `NEXT_PUBLIC_WS_URL` apontando para a URL pública deste backend (ex: `https://seu-backend.onrender.com/wsock`).
 - A porta vem da variável `PORT` (padrão `8080`). Há um `Dockerfile` na pasta.
+- Para o *health check* do Render e para monitores de disponibilidade (ex: UptimeRobot), use `GET` ou `HEAD` em `/saude`, que responde `200` com `{"status":"ok"}`. A raiz (`/`) responde `404` e o `/wsock/info` não aceita `HEAD`.
 - Para a transmissão funcionar entre redes diferentes, configure um servidor TURN: `APP_ICE_TURN_URLS` (separadas por vírgula), `APP_ICE_TURN_USERNAME` e `APP_ICE_TURN_CREDENTIAL`. O front busca a configuração em `GET /api/ice`.
+
+## Avisar sobre uma nova versão do app
+
+Ao publicar um Release novo, defina no Render a variável `APP_VERSAO_ATUAL` (ex: `0.1.4`) e, se quiser, `APP_VERSAO_URL` (padrão: a página de releases do GitHub). Não precisa refazer build nem deploy do código, só reiniciar o serviço.
+
+Quando alguém entra numa sala, o servidor compara a versão do app com a `APP_VERSAO_ATUAL`:
+
+- **Apps antigos (0.1.3 ou anterior, que não informam a versão):** recebem uma mensagem de texto no aviso que já exibiam ("Há uma nova versão do Contela (X). Baixe em ...").
+- **Apps novos e desatualizados:** recebem uma faixa com botão "Baixar" e "Agora não".
+- **App na versão atual (ou mais nova) e versão web:** não recebem nada.
+
+Sem `APP_VERSAO_ATUAL`, ninguém recebe aviso.
 
 ## Encerrar uma sala denunciada
 

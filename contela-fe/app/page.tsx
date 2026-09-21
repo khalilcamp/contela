@@ -16,6 +16,8 @@ export default function Home() {
     entrando,
     erro,
     limparErro,
+    atualizacao,
+    dispensarAtualizacao,
     meuId,
     souDono,
     sala,
@@ -63,6 +65,8 @@ export default function Home() {
           souDono={souDono}
           aviso={erro}
           onFecharAviso={limparErro}
+          atualizacao={atualizacao}
+          onDispensarAtualizacao={dispensarAtualizacao}
           compartilhando={compartilhando}
           streamLocal={streamLocal}
           streamsRemotas={streamsRemotas}

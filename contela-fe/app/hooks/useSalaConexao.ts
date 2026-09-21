@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import {
+    AvisoVersao,
     buscarServidoresIce,
     criarClienteStomp,
     criarSala,
@@ -40,6 +41,7 @@ export function useSalaConexao() {
     const [conectado, setConectado] = useState(false);
     const [entrando, setEntrando] = useState(false);
     const [erro, setErro] = useState<string | null>(null);
+    const [atualizacao, setAtualizacao] = useState<AvisoVersao | null>(null);
     const [meuId, setMeuId] = useState<string | null>(null);
 
     const [sala, setSala] = useState<SalaResponse | null>(null);
@@ -114,6 +116,7 @@ export function useSalaConexao() {
         setStreamLocal(null);
         setStreamsRemotas(new Map());
         setCompartilhando(false);
+        setAtualizacao(null);
         if (mensagem) mostrarErro(mensagem);
     }
 
@@ -202,6 +205,7 @@ export function useSalaConexao() {
                     if (entradoRef.current) mostrarErro(mensagem);
                     else encerrarSessao(mensagem);
                 },
+                onAviso: setAtualizacao,
                 onExpulso: (motivo) =>
                     encerrarSessao(
                         motivo === 'encerrada'
@@ -327,6 +331,8 @@ export function useSalaConexao() {
         entrando,
         erro,
         limparErro,
+        atualizacao,
+        dispensarAtualizacao: () => setAtualizacao(null),
         meuId,
         souDono: sala !== null && sala.donoId === meuId,
         sala,

@@ -12,4 +12,6 @@ public class RequestEntrarSala {
     private String nome;
     private String senha;
     private String tokenDono;
+    private String versaoApp;
+    private String plataforma;
 }

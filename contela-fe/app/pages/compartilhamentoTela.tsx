@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Integrante, SalaResponse, MensagemResponse } from '../types/sala';
 import { OpcoesCompartilhamento } from '../types/compartilhamento';
 import { Aviso } from '../components/Aviso';
+import { AvisoAtualizacao } from '../components/AvisoAtualizacao';
+import { AvisoVersao } from '../lib/websocket';
 import { DrawerCompartilhamento } from '../components/DrawerCompartilhamento';
 import { Topbar } from '../components/Topbar';
 import { VideoStage } from '../components/VideoStage';
@@ -16,6 +18,8 @@ interface CompartilhamentoTelaProps {
     souDono: boolean;
     aviso: string | null;
     onFecharAviso: () => void;
+    atualizacao: AvisoVersao | null;
+    onDispensarAtualizacao: () => void;
     compartilhando: boolean;
     streamLocal: MediaStream | null;
     streamsRemotas: Map<string, MediaStream>;
@@ -40,6 +44,8 @@ export default function CompartilhamentoTela({
     souDono,
     aviso,
     onFecharAviso,
+    atualizacao,
+    onDispensarAtualizacao,
     compartilhando,
     streamLocal,
     streamsRemotas,
@@ -80,6 +86,8 @@ export default function CompartilhamentoTela({
                 onToggleChat={onToggleChat}
                 onSair={onSair}
             />
+
+            <AvisoAtualizacao aviso={atualizacao} onDispensar={onDispensarAtualizacao} />
 
             <Aviso mensagem={aviso} onFechar={onFecharAviso} />
 

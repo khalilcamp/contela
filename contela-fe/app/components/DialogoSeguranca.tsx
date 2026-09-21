@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { VERSAO_APP } from '../lib/versao';
 import { IconCopiar, IconFechar } from './icons';
 
 const EMAIL_CONTATO = 'linkpetprofessional@gmail.com';
@@ -76,6 +77,10 @@ export function DialogoSeguranca({ aberto, onFechar, salaId }: DialogoSegurancaP
                                 direta.
                             </li>
                             <li>Vídeo e áudio seguem cifrados entre os participantes.</li>
+                            <li>
+                                O app informa ao servidor a versão instalada, apenas para avisar quando houver uma
+                                atualização. Você está na versão {VERSAO_APP}.
+                            </li>
                         </ul>
                     </section>
 
