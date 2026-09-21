@@ -19,6 +19,13 @@ import { ERRO_SEM_AUDIO, GerenciadorWebRTC } from '../lib/webrtc';
 import { SalaResponse, MensagemResponse, SinalWebRTC } from '../types/sala';
 import { OpcoesCompartilhamento } from '../types/compartilhamento';
 
+export interface PreviaTransmissao {
+    stream: MediaStream;
+    opcoes: OpcoesCompartilhamento;
+    nomeFonte: string | null;
+    semAudio: boolean;
+}
+
 const TEMPO_AVISO_MS = 8000;
 const TEMPO_LIMITE_ENTRADA_MS = 10000;
 
@@ -52,6 +59,8 @@ export function useSalaConexao() {
 
     const [streamsRemotas, setStreamsRemotas] = useState<Map<string, MediaStream>>(new Map());
     const [streamLocal, setStreamLocal] = useState<MediaStream | null>(null);
+    const [previa, setPrevia] = useState<PreviaTransmissao | null>(null);
+    const previaRef = useRef<PreviaTransmissao | null>(null);
     const [chatAberto, setChatAberto] = useState(true);
     const [diagnostico, setDiagnostico] = useState<DiagnosticoPeer[]>([]);
     const [tiposServidoresIce, setTiposServidoresIce] = useState<string[]>([]);
@@ -136,6 +145,8 @@ export function useSalaConexao() {
         setSala(null);
         setMensagens([]);
         setStreamLocal(null);
+        previaRef.current = null;
+        setPrevia(null);
         setStreamsRemotas(new Map());
         setCompartilhando(false);
         setAtualizacao(null);
@@ -287,7 +298,7 @@ export function useSalaConexao() {
         setTexto('');
     }
 
-    async function handleCompartilhar(opcoes: OpcoesCompartilhamento, fonteId: string | null) {
+    async function handleCompartilhar(opcoes: OpcoesCompartilhamento, fonteId: string | null, nomeFonte: string | null = null) {
         if (!webrtcRef.current || !sala || !clientRef.current || !salaIdAtualRef.current) return;
 
         if (sala.participantes.some((p) => p.compartilhando && p.id !== meuId)) {
@@ -295,14 +306,10 @@ export function useSalaConexao() {
             return;
         }
 
-        const outrosIds = sala.participantes
-            .map((p) => p.id)
-            .filter((id) => id !== meuId);
-
         const gerenciador = webrtcRef.current;
         let stream: MediaStream;
         try {
-            stream = await gerenciador.iniciarCompartilhamento(outrosIds, opcoes, fonteId);
+            stream = await gerenciador.capturar(opcoes, fonteId);
         } catch (erro) {
             if (erro instanceof Error && erro.message === ERRO_SEM_AUDIO) {
                 mostrarErro('Nenhum áudio foi compartilhado. Marque a opção de compartilhar o áudio no seletor do navegador.');
@@ -310,12 +317,50 @@ export function useSalaConexao() {
             return;
         }
 
-        setStreamLocal(opcoes.apenasAudio ? new MediaStream(stream.getAudioTracks()) : stream);
+        const nova: PreviaTransmissao = { stream, opcoes, nomeFonte, semAudio: gerenciador.audioDeJanelaFalhou };
+        stream.getVideoTracks().forEach((faixa) =>
+            faixa.addEventListener('ended', () => {
+                if (previaRef.current?.stream === stream) handleCancelarPrevia();
+            }),
+        );
+        previaRef.current = nova;
+        setPrevia(nova);
+    }
+
+    function handleCancelarPrevia() {
+        previaRef.current = null;
+        setPrevia(null);
+        webrtcRef.current?.descartarCaptura();
+    }
+
+    async function handleConfirmarTransmissao() {
+        const atual = previaRef.current;
+        const gerenciador = webrtcRef.current;
+        if (!atual || !gerenciador || !sala || !clientRef.current || !salaIdAtualRef.current) return;
+
+        if (sala.participantes.some((p) => p.compartilhando && p.id !== meuId)) {
+            handleCancelarPrevia();
+            mostrarErro('Outra pessoa já está compartilhando a tela.');
+            return;
+        }
+
+        const outrosIds = sala.participantes.map((p) => p.id).filter((id) => id !== meuId);
+        try {
+            await gerenciador.iniciarTransmissao(outrosIds);
+        } catch {
+            handleCancelarPrevia();
+            mostrarErro('Não foi possível iniciar a transmissão.');
+            return;
+        }
+
+        previaRef.current = null;
+        setPrevia(null);
+        setStreamLocal(atual.opcoes.apenasAudio ? new MediaStream(atual.stream.getAudioTracks()) : atual.stream);
         enviarStatusCompartilhamento(clientRef.current, salaIdAtualRef.current, true);
         compartilhandoRef.current = true;
         setCompartilhando(true);
 
-        if (gerenciador.audioDeJanelaFalhou) {
+        if (atual.semAudio) {
             mostrarErro('Não foi possível capturar o áudio dessa janela. Você está transmitindo sem som.');
         }
     }
@@ -376,7 +421,10 @@ export function useSalaConexao() {
         handleCriar,
         handleSair,
         handleEnviarMensagem,
+        previa,
         handleCompartilhar,
+        handleConfirmarTransmissao,
+        handleCancelarPrevia,
         handlePararCompartilhamento,
         handlePararDe,
         handleExpulsar,

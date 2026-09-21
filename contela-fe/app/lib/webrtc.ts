@@ -33,6 +33,7 @@ export class GerenciadorWebRTC {
     private streamLocal: MediaStream | null = null;
     private opcoes: OpcoesCompartilhamento = OPCOES_PADRAO;
     private audioJanela: AudioJanela | null = null;
+    private transmitindo = false;
     private ultimasLeituras: Map<string, { instante: number; recebidos: number; enviados: number }> = new Map();
     audioDeJanelaFalhou = false;
 
@@ -55,11 +56,9 @@ export class GerenciadorWebRTC {
         this.onCompartilhamentoParado = onCompartilhamentoParado;
     }
 
-    async iniciarCompartilhamento(
-        participantesIds: string[],
-        opcoes: OpcoesCompartilhamento = OPCOES_PADRAO,
-        fonteId: string | null = null
-    ): Promise<MediaStream> {
+    async capturar(opcoes: OpcoesCompartilhamento = OPCOES_PADRAO, fonteId: string | null = null): Promise<MediaStream> {
+        this.descartarCaptura();
+
         if (fonteId && window.contela) {
             await window.contela.selecionarFonte({ id: fonteId, audio: opcoes.audio });
         }
@@ -100,16 +99,32 @@ export class GerenciadorWebRTC {
             });
         }
 
+        return this.streamLocal;
+    }
+
+    async iniciarTransmissao(participantesIds: string[]) {
+        if (!this.streamLocal) throw new Error('Nada capturado para transmitir.');
+        this.transmitindo = true;
         for (const peerId of participantesIds) {
             if (peerId === this.meuId) continue;
             await this.criarOfertaPara(peerId);
         }
+    }
 
-        return this.streamLocal;
+    descartarCaptura() {
+        if (this.transmitindo) return;
+        this.streamLocal?.getTracks().forEach((track) => track.stop());
+        this.streamLocal = null;
+        this.audioJanela?.encerrar();
+        this.audioJanela = null;
+    }
+
+    get capturaPronta(): boolean {
+        return this.streamLocal !== null;
     }
 
     async adicionarParticipante(peerId: string) {
-        if (!this.streamLocal) return;
+        if (!this.transmitindo || !this.streamLocal) return;
         if (peerId === this.meuId) return;
         if (this.conexoes.has(peerId)) return;
 
@@ -117,6 +132,7 @@ export class GerenciadorWebRTC {
     }
 
     pararCompartilhamento() {
+        this.transmitindo = false;
         this.streamLocal?.getTracks().forEach((track) => track.stop());
         this.streamLocal = null;
         this.audioJanela?.encerrar();

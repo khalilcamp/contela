@@ -35,7 +35,10 @@ export default function Home() {
     handleCriar,
     handleSair,
     handleEnviarMensagem,
+    previa,
     handleCompartilhar,
+    handleConfirmarTransmissao,
+    handleCancelarPrevia,
     handlePararCompartilhamento,
     handlePararDe,
     handleExpulsar,
@@ -78,7 +81,10 @@ export default function Home() {
           texto={texto}
           onTextoChange={setTexto}
           onEnviarMensagem={handleEnviarMensagem}
+          previa={previa}
           onCompartilhar={handleCompartilhar}
+          onConfirmarTransmissao={handleConfirmarTransmissao}
+          onCancelarPrevia={handleCancelarPrevia}
           onPararCompartilhamento={handlePararCompartilhamento}
           onPararDe={handlePararDe}
           onExpulsar={handleExpulsar}

@@ -46,6 +46,13 @@ export function construirConstraintsVideo(opcoes: OpcoesCompartilhamento): Media
     return constraints;
 }
 
+export function resumirOpcoes(opcoes: OpcoesCompartilhamento): string {
+    if (opcoes.apenasAudio) return 'Só áudio, estéreo, até 128 kbps';
+    const rotulo = opcoes.resolucao === 'fonte' ? 'Original' : opcoes.resolucao;
+    const mbps = (calcularBitrateMaximo(opcoes) / 1_000_000).toFixed(1).replace('.', ',');
+    return `${rotulo} a ${opcoes.fps} fps, até ${mbps} Mbps`;
+}
+
 export function calcularBitrateMaximo(opcoes: OpcoesCompartilhamento): number {
     const fator = opcoes.fps === 60 ? 1.6 : opcoes.fps === 15 ? 0.6 : 1;
     return Math.round(BITRATE_BASE[opcoes.resolucao] * fator);

@@ -7,7 +7,9 @@ import { AvisoVersao } from '../lib/websocket';
 import { DiagnosticoPeer } from '../lib/diagnostico';
 import { VERSAO_APP, plataformaAtual } from '../lib/versao';
 import { DialogoDiagnostico } from '../components/DialogoDiagnostico';
+import { DialogoPrevia } from '../components/DialogoPrevia';
 import { DrawerCompartilhamento } from '../components/DrawerCompartilhamento';
+import type { PreviaTransmissao } from '../hooks/useSalaConexao';
 import { Topbar } from '../components/Topbar';
 import { VideoStage } from '../components/VideoStage';
 import { ChatPanel } from '../components/ChatPanel';
@@ -32,7 +34,10 @@ interface CompartilhamentoTelaProps {
     texto: string;
     onTextoChange: (valor: string) => void;
     onEnviarMensagem: () => void;
-    onCompartilhar: (opcoes: OpcoesCompartilhamento, fonteId: string | null) => void;
+    previa: PreviaTransmissao | null;
+    onCompartilhar: (opcoes: OpcoesCompartilhamento, fonteId: string | null, nomeFonte: string | null) => void;
+    onConfirmarTransmissao: () => void;
+    onCancelarPrevia: () => void;
     onPararCompartilhamento: () => void;
     onPararDe: (alvoId: string) => void;
     onExpulsar: (alvoId: string) => void;
@@ -60,7 +65,10 @@ export default function CompartilhamentoTela({
     texto,
     onTextoChange,
     onEnviarMensagem,
+    previa,
     onCompartilhar,
+    onConfirmarTransmissao,
+    onCancelarPrevia,
     onPararCompartilhamento,
     onPararDe,
     onExpulsar,
@@ -154,11 +162,23 @@ export default function CompartilhamentoTela({
             <DrawerCompartilhamento
                 aberto={drawerAberto}
                 onFechar={() => setDrawerAberto(false)}
-                onIniciar={(opcoes, fonteId) => {
+                onIniciar={(opcoes, fonteId, nomeFonte) => {
                     setDrawerAberto(false);
-                    onCompartilhar(opcoes, fonteId);
+                    onCompartilhar(opcoes, fonteId, nomeFonte);
                 }}
             />
+
+            {previa && (
+                <DialogoPrevia
+                    previa={previa}
+                    onIrAoVivo={onConfirmarTransmissao}
+                    onVoltar={() => {
+                        onCancelarPrevia();
+                        setDrawerAberto(true);
+                    }}
+                    onCancelar={onCancelarPrevia}
+                />
+            )}
         </div>
     );
 }

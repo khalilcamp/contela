@@ -7,7 +7,7 @@ import {
     OpcoesCompartilhamento,
     Resolucao,
     TaxaQuadros,
-    calcularBitrateMaximo,
+    resumirOpcoes,
 } from '../types/compartilhamento';
 import { Enquadramento } from './Enquadramento';
 import { IconFechar, IconMonitor } from './icons';
@@ -15,7 +15,7 @@ import { IconFechar, IconMonitor } from './icons';
 interface DrawerCompartilhamentoProps {
     aberto: boolean;
     onFechar: () => void;
-    onIniciar: (opcoes: OpcoesCompartilhamento, fonteId: string | null) => void;
+    onIniciar: (opcoes: OpcoesCompartilhamento, fonteId: string | null, nomeFonte: string | null) => void;
 }
 
 const RESOLUCOES: { valor: Resolucao; rotulo: string }[] = [
@@ -87,10 +87,7 @@ export function DrawerCompartilhamento({ aberto, onFechar, onIniciar }: DrawerCo
           : desktop
             ? 'Todo o som do computador.'
             : null;
-    const mbps = (calcularBitrateMaximo(opcoes) / 1_000_000).toFixed(1).replace('.', ',');
-    const resumo = opcoes.apenasAudio
-        ? 'Só áudio, estéreo, até 128 kbps'
-        : `${RESOLUCOES.find((r) => r.valor === opcoes.resolucao)?.rotulo} a ${opcoes.fps} fps, até ${mbps} Mbps`;
+    const resumo = resumirOpcoes(opcoes);
 
     return (
         <>
@@ -214,11 +211,11 @@ export function DrawerCompartilhamento({ aberto, onFechar, onIniciar }: DrawerCo
                         </button>
                         <button
                             disabled={!podeIniciar}
-                            onClick={() => onIniciar({ ...opcoes, audio: audioAtivo }, desktop ? fonteId : null)}
+                            onClick={() => onIniciar({ ...opcoes, audio: audioAtivo }, desktop ? fonteId : null, desktop ? (selecionada?.name ?? null) : null)}
                             className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-signal px-4 py-2.5 text-sm font-semibold text-signal-ink transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal disabled:cursor-not-allowed disabled:opacity-40"
                         >
                             <IconMonitor className="h-4 w-4" />
-                            {opcoes.apenasAudio ? 'Transmitir áudio' : 'Transmitir'}
+                            Continuar
                         </button>
                     </div>
                 </footer>
