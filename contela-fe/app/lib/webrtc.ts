@@ -9,7 +9,15 @@ import {
 } from '../types/compartilhamento';
 
 import { AudioJanela } from './audioJanela';
+import { DiagnosticoPeer } from './diagnostico';
 import { SERVIDORES_ICE_PADRAO } from './ice';
+
+type Estatistica = Record<string, unknown>;
+
+const numero = (valor: unknown): number | null =>
+    typeof valor === 'number' && Number.isFinite(valor) ? valor : null;
+
+const texto = (valor: unknown): string | null => (typeof valor === 'string' ? valor : null);
 
 export class GerenciadorWebRTC {
     private client: Client;
@@ -22,6 +30,7 @@ export class GerenciadorWebRTC {
     private streamLocal: MediaStream | null = null;
     private opcoes: OpcoesCompartilhamento = OPCOES_PADRAO;
     private audioJanela: AudioJanela | null = null;
+    private ultimasLeituras: Map<string, { instante: number; recebidos: number; enviados: number }> = new Map();
     audioDeJanelaFalhou = false;
 
     private onStreamRemota: (peerId: string, stream: MediaStream) => void;
@@ -109,6 +118,103 @@ export class GerenciadorWebRTC {
         });
         this.conexoes.clear();
         this.candidatosPendentes.clear();
+        this.ultimasLeituras.clear();
+    }
+
+    tiposServidoresIce(): string[] {
+        const tipos = new Set<string>();
+        this.servidoresIce.forEach((servidor) => {
+            [servidor.urls].flat().forEach((url) => {
+                const esquema = url.split(':')[0];
+                if (esquema === 'stun' || esquema === 'stuns') tipos.add('STUN');
+                if (esquema === 'turn' || esquema === 'turns') tipos.add('TURN');
+            });
+        });
+        return [...tipos];
+    }
+
+    async coletarDiagnostico(): Promise<DiagnosticoPeer[]> {
+        const instante = performance.now();
+        const resultado: DiagnosticoPeer[] = [];
+
+        for (const [peerId, conexao] of this.conexoes) {
+            let relatorio: RTCStatsReport;
+            try {
+                relatorio = await conexao.getStats();
+            } catch {
+                continue;
+            }
+
+            const itens = new Map<string, Estatistica>();
+            relatorio.forEach((item) => itens.set(item.id, item as unknown as Estatistica));
+
+            let idDoPar: string | null = null;
+            let entrada: Estatistica | null = null;
+            let saida: Estatistica | null = null;
+            let parEscolhido: Estatistica | null = null;
+
+            itens.forEach((item) => {
+                if (item.type === 'transport') idDoPar = texto(item.selectedCandidatePairId) ?? idDoPar;
+                if (item.type === 'inbound-rtp' && item.kind === 'video') entrada = item;
+                if (item.type === 'outbound-rtp' && item.kind === 'video') saida = item;
+            });
+
+            if (idDoPar) parEscolhido = itens.get(idDoPar) ?? null;
+            if (!parEscolhido) {
+                itens.forEach((item) => {
+                    if (item.type === 'candidate-pair' && item.state === 'succeeded' && (item.nominated || !parEscolhido)) {
+                        parEscolhido = item;
+                    }
+                });
+            }
+
+            const par = parEscolhido as Estatistica | null;
+            const local = par ? itens.get(texto(par.localCandidateId) ?? '') : undefined;
+            const remoto = par ? itens.get(texto(par.remoteCandidateId) ?? '') : undefined;
+            const tipoLocal = local ? texto(local.candidateType) : null;
+            const tipoRemoto = remoto ? texto(remoto.candidateType) : null;
+
+            const recebidos = numero((entrada as Estatistica | null)?.bytesReceived) ?? 0;
+            const enviados = numero((saida as Estatistica | null)?.bytesSent) ?? 0;
+            const anterior = this.ultimasLeituras.get(peerId);
+            let kbpsRecebendo: number | null = null;
+            let kbpsEnviando: number | null = null;
+            if (anterior && instante > anterior.instante) {
+                const segundos = (instante - anterior.instante) / 1000;
+                kbpsRecebendo = ((recebidos - anterior.recebidos) * 8) / 1000 / segundos;
+                kbpsEnviando = ((enviados - anterior.enviados) * 8) / 1000 / segundos;
+            }
+            this.ultimasLeituras.set(peerId, { instante, recebidos, enviados });
+
+            const videoEntrada = entrada as Estatistica | null;
+            const videoSaida = saida as Estatistica | null;
+            const perdidos = numero(videoEntrada?.packetsLost);
+            const recebidosPacotes = numero(videoEntrada?.packetsReceived);
+            const rtt = numero(par?.currentRoundTripTime);
+
+            resultado.push({
+                peerId,
+                estadoIce: conexao.iceConnectionState,
+                estadoConexao: conexao.connectionState,
+                via: !par ? 'indefinida' : tipoLocal === 'relay' || tipoRemoto === 'relay' ? 'retransmissao' : 'direta',
+                tipoLocal,
+                tipoRemoto,
+                protocolo: local ? texto(local.protocol) : null,
+                rttMs: rtt === null ? null : rtt * 1000,
+                kbpsRecebendo: videoEntrada ? kbpsRecebendo : null,
+                kbpsEnviando: videoSaida ? kbpsEnviando : null,
+                fps: numero(videoEntrada?.framesPerSecond) ?? numero(videoSaida?.framesPerSecond),
+                largura: numero(videoEntrada?.frameWidth) ?? numero(videoSaida?.frameWidth),
+                altura: numero(videoEntrada?.frameHeight) ?? numero(videoSaida?.frameHeight),
+                perdaPct:
+                    perdidos !== null && recebidosPacotes !== null && perdidos + recebidosPacotes > 0
+                        ? (perdidos / (perdidos + recebidosPacotes)) * 100
+                        : null,
+                limitacao: texto(videoSaida?.qualityLimitationReason),
+            });
+        }
+
+        return resultado;
     }
 
     processarSinalRecebido(sinal: SinalWebRTC): Promise<void> {

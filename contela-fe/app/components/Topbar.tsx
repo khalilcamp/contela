@@ -1,25 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Integrante } from '../types/sala';
 import { Avatar } from './Avatar';
 import { DialogoSeguranca } from './DialogoSeguranca';
 import { IconChat, IconCopiar, IconEscudo, IconSair } from './icons';
+import { ListaParticipantes } from './ListaParticipantes';
+import { AcaoTile } from './TileParticipante';
 
 interface TopbarProps {
     salaId: string;
     senhaSala: string;
     participantes: Integrante[];
+    meuId: string | null;
+    donoId: string | null;
     souDono: boolean;
+    acoesPara?: (participante: Integrante) => AcaoTile[];
     chatAberto: boolean;
     onToggleChat: () => void;
     onSair: () => void;
 }
 
-export function Topbar({ salaId, senhaSala, participantes, souDono, chatAberto, onToggleChat, onSair }: TopbarProps) {
+export function Topbar({
+    salaId,
+    senhaSala,
+    participantes,
+    meuId,
+    donoId,
+    souDono,
+    acoesPara,
+    chatAberto,
+    onToggleChat,
+    onSair,
+}: TopbarProps) {
     const [copiado, setCopiado] = useState(false);
     const [segurancaAberta, setSegurancaAberta] = useState(false);
+    const [listaAberta, setListaAberta] = useState(false);
+    const listaRef = useRef<HTMLDivElement>(null);
     const emAndamento = participantes.some((p) => p.compartilhando);
+
+    useEffect(() => {
+        if (!listaAberta) return;
+        const aoClicarFora = (e: MouseEvent) => {
+            if (listaRef.current && !listaRef.current.contains(e.target as Node)) setListaAberta(false);
+        };
+        const aoTeclar = (e: KeyboardEvent) => e.key === 'Escape' && setListaAberta(false);
+        document.addEventListener('mousedown', aoClicarFora);
+        window.addEventListener('keydown', aoTeclar);
+        return () => {
+            document.removeEventListener('mousedown', aoClicarFora);
+            window.removeEventListener('keydown', aoTeclar);
+        };
+    }, [listaAberta]);
 
     async function copiarConvite() {
         const convite = window.location.protocol.startsWith('http')
@@ -34,7 +66,7 @@ export function Topbar({ salaId, senhaSala, participantes, souDono, chatAberto, 
     }
 
     return (
-        <div className="mx-3 mt-3 flex h-12 shrink-0 items-center gap-3 rounded-xl border border-line bg-ink-2/80 px-4 backdrop-blur-xl">
+        <div className="relative z-40 mx-3 mt-3 flex h-12 shrink-0 items-center gap-3 rounded-xl border border-line bg-ink-2/80 px-4 backdrop-blur-xl">
             <span className="font-display text-sm font-semibold tracking-tight text-paper">Contela</span>
             <span aria-hidden className="h-4 w-px bg-line" />
             <button
@@ -60,14 +92,33 @@ export function Topbar({ salaId, senhaSala, participantes, souDono, chatAberto, 
             )}
 
             <div className="ml-auto flex items-center gap-3">
-                <div className="flex -space-x-2">
-                    {participantes.slice(0, 5).map((p) => (
-                        <div key={p.id} title={p.nome}>
-                            <Avatar id={p.id} nome={p.nome} tamanho={28} compartilhando={p.compartilhando} />
-                        </div>
-                    ))}
+                <div ref={listaRef} className="relative">
+                    <button
+                        onClick={() => setListaAberta((aberta) => !aberta)}
+                        aria-label="Ver participantes"
+                        aria-expanded={listaAberta}
+                        title="Ver participantes"
+                        className="flex items-center gap-2 rounded-lg px-1.5 py-1 transition hover:bg-ink-3 focus-visible:outline-2 focus-visible:outline-signal"
+                    >
+                        <span className="flex -space-x-2">
+                            {participantes.slice(0, 5).map((p) => (
+                                <span key={p.id}>
+                                    <Avatar id={p.id} nome={p.nome} tamanho={28} compartilhando={p.compartilhando} />
+                                </span>
+                            ))}
+                        </span>
+                        {participantes.length > 0 && <span className="text-xs text-mute">{participantes.length}</span>}
+                    </button>
+
+                    {listaAberta && (
+                        <ListaParticipantes
+                            participantes={participantes}
+                            meuId={meuId}
+                            donoId={donoId}
+                            acoesPara={acoesPara}
+                        />
+                    )}
                 </div>
-                {participantes.length > 0 && <span className="text-xs text-mute">{participantes.length}</span>}
 
                 <button
                     onClick={() => setSegurancaAberta(true)}

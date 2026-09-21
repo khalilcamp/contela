@@ -18,6 +18,8 @@ export default function Home() {
     limparErro,
     atualizacao,
     dispensarAtualizacao,
+    diagnostico,
+    tiposServidoresIce,
     meuId,
     souDono,
     sala,
@@ -67,6 +69,8 @@ export default function Home() {
           onFecharAviso={limparErro}
           atualizacao={atualizacao}
           onDispensarAtualizacao={dispensarAtualizacao}
+          diagnostico={diagnostico}
+          tiposServidoresIce={tiposServidoresIce}
           compartilhando={compartilhando}
           streamLocal={streamLocal}
           streamsRemotas={streamsRemotas}

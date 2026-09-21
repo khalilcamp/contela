@@ -97,6 +97,32 @@ export function IconSair({ className }: IconProps) {
     );
 }
 
+export function IconVolume({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M4 10v4h3.5L12 18V6L7.5 10z" />
+            <path d="M15.5 9.5a4 4 0 0 1 0 5M18 7a7.5 7.5 0 0 1 0 10" />
+        </svg>
+    );
+}
+
+export function IconMudo({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M4 10v4h3.5L12 18V6L7.5 10z" />
+            <path d="M16 9.5l5 5M21 9.5l-5 5" />
+        </svg>
+    );
+}
+
+export function IconTelaCheia({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4" />
+        </svg>
+    );
+}
+
 export function IconEscudo({ className }: IconProps) {
     return (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>

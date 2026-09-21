@@ -9,6 +9,13 @@ contextBridge.exposeInMainWorld('contela', {
         ipcRenderer.on('contela:sala', handler);
         return () => ipcRenderer.removeListener('contela:sala', handler);
     },
+    atualizacaoStatus: () => ipcRenderer.invoke('contela:atualizacao-status'),
+    aoMudarAtualizacao: (cb) => {
+        const handler = (_e, status) => cb(status);
+        ipcRenderer.on('contela:atualizacao', handler);
+        return () => ipcRenderer.removeListener('contela:atualizacao', handler);
+    },
+    reiniciarParaAtualizar: () => ipcRenderer.invoke('contela:atualizacao-reiniciar'),
     listarFontes: () => ipcRenderer.invoke('contela:listar-fontes'),
     selecionarFonte: (escolha) => ipcRenderer.invoke('contela:selecionar-fonte', escolha),
     iniciarAudioJanela: (fonteId) => ipcRenderer.invoke('contela:audio-janela-iniciar', fonteId),

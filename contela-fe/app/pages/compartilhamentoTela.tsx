@@ -4,6 +4,9 @@ import { OpcoesCompartilhamento } from '../types/compartilhamento';
 import { Aviso } from '../components/Aviso';
 import { AvisoAtualizacao } from '../components/AvisoAtualizacao';
 import { AvisoVersao } from '../lib/websocket';
+import { DiagnosticoPeer } from '../lib/diagnostico';
+import { VERSAO_APP, plataformaAtual } from '../lib/versao';
+import { DialogoDiagnostico } from '../components/DialogoDiagnostico';
 import { DrawerCompartilhamento } from '../components/DrawerCompartilhamento';
 import { Topbar } from '../components/Topbar';
 import { VideoStage } from '../components/VideoStage';
@@ -20,6 +23,8 @@ interface CompartilhamentoTelaProps {
     onFecharAviso: () => void;
     atualizacao: AvisoVersao | null;
     onDispensarAtualizacao: () => void;
+    diagnostico: DiagnosticoPeer[];
+    tiposServidoresIce: string[];
     compartilhando: boolean;
     streamLocal: MediaStream | null;
     streamsRemotas: Map<string, MediaStream>;
@@ -46,6 +51,8 @@ export default function CompartilhamentoTela({
     onFecharAviso,
     atualizacao,
     onDispensarAtualizacao,
+    diagnostico,
+    tiposServidoresIce,
     compartilhando,
     streamLocal,
     streamsRemotas,
@@ -62,6 +69,7 @@ export default function CompartilhamentoTela({
     onToggleChat,
 }: CompartilhamentoTelaProps) {
     const [drawerAberto, setDrawerAberto] = useState(false);
+    const [diagnosticoAberto, setDiagnosticoAberto] = useState(false);
     const participantes = sala?.participantes ?? [];
     const outroCompartilhando = participantes.some((p) => p.compartilhando && p.id !== meuId);
 
@@ -81,7 +89,10 @@ export default function CompartilhamentoTela({
                 salaId={salaId}
                 senhaSala={senhaSala}
                 participantes={participantes}
+                meuId={meuId}
+                donoId={sala?.donoId ?? null}
                 souDono={souDono}
+                acoesPara={acoesPara}
                 chatAberto={chatAberto}
                 onToggleChat={onToggleChat}
                 onSair={onSair}
@@ -99,6 +110,8 @@ export default function CompartilhamentoTela({
                         participantes={participantes}
                         streamsRemotas={streamsRemotas}
                         acoesPara={acoesPara}
+                        diagnostico={diagnostico}
+                        onAbrirDiagnostico={() => setDiagnosticoAberto(true)}
                     />
 
                     <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
@@ -123,6 +136,20 @@ export default function CompartilhamentoTela({
                     />
                 )}
             </div>
+
+            <DialogoDiagnostico
+                aberto={diagnosticoAberto}
+                onFechar={() => setDiagnosticoAberto(false)}
+                diagnostico={diagnostico}
+                nomes={new Map(participantes.map((p) => [p.id, p.nome]))}
+                contexto={{
+                    versao: VERSAO_APP,
+                    plataforma: plataformaAtual(),
+                    servidoresIce: tiposServidoresIce,
+                    participantes: participantes.length,
+                    navegador: navigator.userAgent,
+                }}
+            />
 
             <DrawerCompartilhamento
                 aberto={drawerAberto}

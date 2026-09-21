@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+<title>Contela</title>
+<style>
+  :root { --ink: #0c0d12; --ink-3: #1a1c25; --line: rgba(255,255,255,.09); --paper: #eceef5; --mute: #8b8fa3; --signal: #5eead4; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: radial-gradient(120% 90% at 50% 0%, #161824 0%, var(--ink) 70%);
+    color: var(--paper);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    border: 1px solid var(--line);
+    -webkit-app-region: drag; user-select: none; overflow: hidden;
+  }
+  svg { width: 84px; height: 100px; }
+  .flutuar { animation: flutuar 2.8s ease-in-out infinite; }
+  @keyframes flutuar { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  h1 { font-size: 15px; font-weight: 600; margin-top: 8px; }
+  p { font-size: 12px; color: var(--mute); min-height: 16px; }
+  .trilho { width: 232px; height: 6px; border-radius: 999px; background: var(--ink-3); overflow: hidden; margin-top: 12px; }
+  .barra { height: 100%; width: 0%; border-radius: 999px; background: var(--signal); transition: width .3s ease; }
+  .indeterminada { width: 35%; animation: correr 1.2s ease-in-out infinite; }
+  @keyframes correr { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+  .detalhe { font-size: 11px; color: var(--mute); margin-top: 6px; min-height: 14px; }
+  @media (prefers-reduced-motion: reduce) { .flutuar, .indeterminada { animation: none; } }
+</style>
+</head>
+<body>
+  <svg viewBox="8 0 84 100" aria-hidden="true" style="overflow: visible">
+    <defs>
+      <linearGradient id="casco" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f8fafc" stop-opacity="1" />
+        <stop offset="55%" stop-color="#f8fafc" stop-opacity="0.85" />
+        <stop offset="100%" stop-color="#f8fafc" stop-opacity="0.2" />
+      </linearGradient>
+    </defs>
+    <ellipse cx="50" cy="93" rx="18" ry="3.5" fill="#5eead4" opacity="0.25" />
+    <g class="flutuar">
+      <path fill="url(#casco)" stroke="#dbe2ea" stroke-width="1.5" d="M21,35 A29,29 0 0 1 79,35 L79,82 q-7.25,7 -14.5,0 q-7.25,-7 -14.5,0 q-7.25,7 -14.5,0 q-7.25,-7 -14.5,0 L21,35 Z">
+        <animate attributeName="d" dur="3s" repeatCount="indefinite" values="M21,35 A29,29 0 0 1 79,35 L79,82 q-7.25,7 -14.5,0 q-7.25,-7 -14.5,0 q-7.25,7 -14.5,0 q-7.25,-7 -14.5,0 L21,35 Z;M21,35 A29,29 0 0 1 79,35 L79,82 q-7.25,-7 -14.5,0 q-7.25,7 -14.5,0 q-7.25,-7 -14.5,0 q-7.25,7 -14.5,0 L21,35 Z;M21,35 A29,29 0 0 1 79,35 L79,82 q-7.25,7 -14.5,0 q-7.25,-7 -14.5,0 q-7.25,7 -14.5,0 q-7.25,-7 -14.5,0 L21,35 Z" />
+      </path>
+      <ellipse cx="38" cy="26" rx="10" ry="16" fill="#ffffff" opacity="0.5" />
+      <ellipse cx="30" cy="48" rx="5" ry="3.5" fill="#5eead4" opacity="0.25" />
+      <ellipse cx="70" cy="48" rx="5" ry="3.5" fill="#5eead4" opacity="0.25" />
+      <ellipse cx="36" cy="41" rx="7.5" ry="10" fill="#5eead4" opacity="0.18" />
+      <ellipse cx="36" cy="41" rx="5.5" ry="7.5" fill="#5eead4" />
+      <circle cx="34" cy="37" r="1.6" fill="#ffffff" opacity="0.9" />
+      <ellipse cx="64" cy="41" rx="7.5" ry="10" fill="#5eead4" opacity="0.18" />
+      <ellipse cx="64" cy="41" rx="5.5" ry="7.5" fill="#5eead4" />
+      <circle cx="62" cy="37" r="1.6" fill="#ffffff" opacity="0.9" />
+    </g>
+  </svg>
+  <h1 id="titulo">Contela</h1>
+  <p id="texto">Procurando atualizações...</p>
+  <div class="trilho"><div id="barra" class="barra indeterminada"></div></div>
+  <div class="detalhe" id="detalhe"></div>
+<script>
+  const titulo = document.getElementById('titulo');
+  const texto = document.getElementById('texto');
+  const barra = document.getElementById('barra');
+  const detalhe = document.getElementById('detalhe');
+  const mb = (b) => (b / 1024 / 1024).toFixed(1).replace('.', ',') + ' MB';
+
+  window.abertura.aoMudar((s) => {
+    if (s.estado === 'verificando') {
+      titulo.textContent = 'Contela';
+      texto.textContent = 'Procurando atualizações...';
+      barra.className = 'barra indeterminada';
+      barra.style.width = '';
+      detalhe.textContent = '';
+    } else if (s.estado === 'baixando') {
+      titulo.textContent = 'Atualizando o Contela';
+      texto.textContent = s.versao ? 'Baixando a versão ' + s.versao : 'Baixando atualização';
+      barra.className = 'barra';
+      if (s.progresso) {
+        barra.style.width = Math.round(s.progresso.percentual) + '%';
+        detalhe.textContent = mb(s.progresso.transferido) + ' de ' + mb(s.progresso.total) + ' · ' + mb(s.progresso.bytesPorSegundo) + '/s';
+      } else {
+        barra.className = 'barra indeterminada';
+      }
+    } else if (s.estado === 'pronta') {
+      titulo.textContent = 'Tudo pronto';
+      texto.textContent = 'Reiniciando o Contela...';
+      barra.className = 'barra';
+      barra.style.width = '100%';
+      detalhe.textContent = '';
+    }
+  });
+</script>
+</body>
+</html>

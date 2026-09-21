@@ -233,6 +233,176 @@ function registrarCapturaDeTela() {
     });
 }
 
+let statusAtualizacao = { estado: 'nenhum' };
+
+function publicarStatusAtualizacao(status) {
+    statusAtualizacao = status;
+    if (janela && !janela.isDestroyed()) janela.webContents.send('contela:atualizacao', status);
+}
+
+const TEMPO_MAXIMO_VERIFICACAO_MS = 5000;
+const demoAbertura = !app.isPackaged && process.env.CONTELA_ABERTURA_DEMO === '1';
+let abertura = null;
+
+function enviarParaAbertura(status) {
+    if (abertura && !abertura.isDestroyed()) abertura.webContents.send('contela:abertura', status);
+}
+
+function abrirJanelaDeAbertura() {
+    abertura = new BrowserWindow({
+        width: 380,
+        height: 280,
+        frame: false,
+        resizable: false,
+        maximizable: false,
+        minimizable: false,
+        fullscreenable: false,
+        center: true,
+        show: false,
+        backgroundColor: '#0c0d12',
+        icon: path.join(__dirname, 'icon.png'),
+        webPreferences: {
+            preload: path.join(__dirname, 'abertura-preload.js'),
+            contextIsolation: true,
+            nodeIntegration: false,
+            sandbox: true,
+        },
+    });
+    abertura.loadFile(path.join(__dirname, 'abertura.html'));
+    abertura.once('ready-to-show', () => abertura.show());
+    abertura.on('closed', () => {
+        abertura = null;
+    });
+    abertura.webContents.on('will-navigate', (evento) => evento.preventDefault());
+    abertura.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+}
+
+function fecharJanelaDeAbertura() {
+    if (abertura && !abertura.isDestroyed()) abertura.close();
+}
+
+function demonstrarAbertura() {
+    return new Promise((resolve) => {
+        enviarParaAbertura({ estado: 'verificando' });
+        const total = 112363569;
+        let feito = 0;
+        setTimeout(() => {
+            const passo = setInterval(() => {
+                feito = Math.min(total, feito + total * 0.04);
+                enviarParaAbertura({
+                    estado: 'baixando',
+                    versao: '9.9.9',
+                    progresso: { percentual: (feito / total) * 100, transferido: feito, total, bytesPorSegundo: 5200000 },
+                });
+                if (feito >= total) {
+                    clearInterval(passo);
+                    enviarParaAbertura({ estado: 'pronta' });
+                    setTimeout(resolve, 1200);
+                }
+            }, 150);
+        }, 1500);
+    });
+}
+
+function atualizadorInstalavel() {
+    return app.isPackaged && process.platform === 'win32' && !process.env.PORTABLE_EXECUTABLE_FILE;
+}
+
+function verificarNaAbertura(autoUpdater) {
+    return new Promise((resolve) => {
+        let baixando = false;
+        let seguiu = false;
+        const seguir = () => {
+            if (seguiu) return;
+            seguiu = true;
+            clearTimeout(limite);
+            resolve(true);
+        };
+        const limite = setTimeout(() => {
+            if (!baixando) seguir();
+        }, TEMPO_MAXIMO_VERIFICACAO_MS);
+
+        enviarParaAbertura({ estado: 'verificando' });
+        autoUpdater.once('update-not-available', seguir);
+        autoUpdater.once('error', seguir);
+        autoUpdater.once('update-available', (info) => {
+            if (seguiu) return;
+            baixando = true;
+            enviarParaAbertura({ estado: 'baixando', versao: info.version });
+        });
+        autoUpdater.on('download-progress', (p) => {
+            if (!baixando) return;
+            enviarParaAbertura({
+                estado: 'baixando',
+                versao: statusAtualizacao.versao,
+                progresso: {
+                    percentual: p.percent,
+                    bytesPorSegundo: p.bytesPerSecond,
+                    transferido: p.transferred,
+                    total: p.total,
+                },
+            });
+        });
+        autoUpdater.once('update-downloaded', () => {
+            if (!baixando || seguiu) return;
+            seguiu = true;
+            clearTimeout(limite);
+            enviarParaAbertura({ estado: 'pronta' });
+            setTimeout(() => autoUpdater.quitAndInstall(true, true), 1200);
+            resolve(false);
+        });
+        autoUpdater.checkForUpdates().catch(seguir);
+    });
+}
+
+async function iniciarApp() {
+    const atualizador = atualizadorInstalavel() ? configurarAtualizador() : null;
+
+    if (demoAbertura || atualizador) {
+        abrirJanelaDeAbertura();
+        const abrir = demoAbertura ? await demonstrarAbertura().then(() => true) : await verificarNaAbertura(atualizador);
+        if (!abrir) return;
+    }
+
+    criarJanela();
+    fecharJanelaDeAbertura();
+    if (atualizador) setInterval(() => atualizador.checkForUpdates().catch(() => {}), 4 * 60 * 60 * 1000);
+    app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) criarJanela();
+    });
+}
+
+function configurarAtualizador() {
+    const { autoUpdater } = require('electron-updater');
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on('update-available', (info) => publicarStatusAtualizacao({ estado: 'baixando', versao: info.version }));
+    autoUpdater.on('download-progress', (p) =>
+        publicarStatusAtualizacao({
+            estado: 'baixando',
+            versao: statusAtualizacao.versao,
+            progresso: {
+                percentual: p.percent,
+                bytesPorSegundo: p.bytesPerSecond,
+                transferido: p.transferred,
+                total: p.total,
+            },
+        }),
+    );
+    autoUpdater.on('update-downloaded', (info) => publicarStatusAtualizacao({ estado: 'pronta', versao: info.version }));
+    autoUpdater.on('error', () => publicarStatusAtualizacao({ estado: 'erro' }));
+
+    ipcMain.handle('contela:atualizacao-reiniciar', (evento) => {
+        if (!remetenteConfiavel(evento) || statusAtualizacao.estado !== 'pronta') return;
+        autoUpdater.quitAndInstall();
+    });
+
+    return autoUpdater;
+}
+
+ipcMain.handle('contela:atualizacao-status', (evento) => (remetenteConfiavel(evento) ? statusAtualizacao : { estado: 'nenhum' }));
+
 function criarJanela() {
     janela = new BrowserWindow({
         width: 1280,
@@ -300,10 +470,7 @@ if (!app.requestSingleInstanceLock()) {
         const urlInicial = process.argv.find((a) => a.startsWith(`${PROTOCOLO_DEEP_LINK}://`));
         if (urlInicial) salaPendente = extrairSala(urlInicial);
 
-        criarJanela();
-        app.on('activate', () => {
-            if (BrowserWindow.getAllWindows().length === 0) criarJanela();
-        });
+        iniciarApp();
     });
 
     app.on('will-quit', pararCapturaJanela);

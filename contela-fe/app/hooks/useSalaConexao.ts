@@ -14,6 +14,7 @@ import {
     normalizarSalaId,
     pararCompartilhamentoDe,
 } from '../lib/websocket';
+import { DiagnosticoPeer } from '../lib/diagnostico';
 import { GerenciadorWebRTC } from '../lib/webrtc';
 import { SalaResponse, MensagemResponse, SinalWebRTC } from '../types/sala';
 import { OpcoesCompartilhamento } from '../types/compartilhamento';
@@ -52,6 +53,27 @@ export function useSalaConexao() {
     const [streamsRemotas, setStreamsRemotas] = useState<Map<string, MediaStream>>(new Map());
     const [streamLocal, setStreamLocal] = useState<MediaStream | null>(null);
     const [chatAberto, setChatAberto] = useState(true);
+    const [diagnostico, setDiagnostico] = useState<DiagnosticoPeer[]>([]);
+    const [tiposServidoresIce, setTiposServidoresIce] = useState<string[]>([]);
+
+    const transmissaoAtiva = sala?.participantes.some((p) => p.compartilhando) ?? false;
+
+    useEffect(() => {
+        if (!conectado || !transmissaoAtiva) return;
+        let ativo = true;
+
+        const ler = async () => {
+            const dados = await webrtcRef.current?.coletarDiagnostico();
+            if (ativo && dados) setDiagnostico(dados);
+        };
+
+        ler();
+        const intervalo = setInterval(ler, 2000);
+        return () => {
+            ativo = false;
+            clearInterval(intervalo);
+        };
+    }, [conectado, transmissaoAtiva]);
 
     useEffect(() => {
         const daUrl = new URLSearchParams(window.location.search).get('sala');
@@ -163,6 +185,7 @@ export function useSalaConexao() {
                         },
                         servidoresIce
                     );
+                    setTiposServidoresIce(webrtcRef.current.tiposServidoresIce());
 
                     setConectado(true);
                     setEntrando(false);
@@ -333,6 +356,8 @@ export function useSalaConexao() {
         limparErro,
         atualizacao,
         dispensarAtualizacao: () => setAtualizacao(null),
+        diagnostico: transmissaoAtiva ? diagnostico : [],
+        tiposServidoresIce,
         meuId,
         souDono: sala !== null && sala.donoId === meuId,
         sala,

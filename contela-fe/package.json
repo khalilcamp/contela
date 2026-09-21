@@ -9,10 +9,12 @@
     "lint": "eslint",
     "electron:dev": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:static": "cross-env ELECTRON=1 next build && electron . --static",
-    "electron:build": "cross-env ELECTRON=1 next build && electron-builder"
+    "electron:build": "cross-env ELECTRON=1 next build && electron-builder",
+    "test:integracao": "node tests/integracao/executar.cjs"
   },
   "dependencies": {
-    "application-loopback": "^1.2.7"
+    "application-loopback": "^1.2.7",
+    "electron-updater": "^6.8.9"
   },
   "devDependencies": {
     "@stomp/stompjs": "^7.3.0",
@@ -80,6 +82,13 @@
     },
     "asarUnpack": [
       "node_modules/application-loopback/bin/**"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "khalilcamp",
+        "repo": "contela"
+      }
     ]
   }
 }

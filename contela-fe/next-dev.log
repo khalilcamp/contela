@@ -1,0 +1,33 @@
+▲ Next.js 16.3.3 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://26.115.166.11:3000
+- Environments: .env.local
+✓ Ready in 663ms
+✓ Running next.config.ts took 85ms
+
+⨯ ./app/dev/atualizacao/page.tsx:11:1
+Error: Expected ',', got '<eof>'
+  [90m 9 |[0m [36mconst[0m [33mCASOS[0m: [33mRecord[0m<string, [33mStatusAtualizacao[0m> = {
+  [90m10 |[0m     [32m'Iniciando'[0m: { estado: [32m'baixando'[0m
+[31m[1m>[0m [90m11 |[0m
+  [90m   |[0m [31m[1m^[0m
+
+Parsing ecmascript source code failed
+
+
+ GET /dev/atualizacao 500 in 1314ms (next.js: 1176ms, application-code: 138ms)
+⨯ ./app/dev/atualizacao/page.tsx:11:1
+Error: Expected ',', got '<eof>'
+  [90m 9 |[0m [36mconst[0m [33mCASOS[0m: [33mRecord[0m<string, [33mStatusAtualizacao[0m> = {
+  [90m10 |[0m     [32m'Iniciando'[0m: { estado: [32m'baixando'[0m
+[31m[1m>[0m [90m11 |[0m
+  [90m   |[0m [31m[1m^[0m
+
+Parsing ecmascript source code failed
+
+
+ GET /dev/atualizacao 500 in 17ms (next.js: 11ms, application-code: 7ms)
+✓ Compiled in 89ms
+ GET /dev/atualizacao 200 in 297ms (next.js: 183ms, application-code: 114ms)
+ GET /dev/atualizacao 200 in 56ms (next.js: 9ms, application-code: 47ms)
+✓ Compiled in 89ms

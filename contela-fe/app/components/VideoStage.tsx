@@ -1,7 +1,9 @@
 import { Integrante } from '../types/sala';
 import { corAvatar } from '../lib/avatar';
+import { DiagnosticoPeer } from '../lib/diagnostico';
 import { Enquadramento } from './Enquadramento';
 import { GradeParticipantes } from './GradeParticipantes';
+import { IndicadorConexao } from './IndicadorConexao';
 import { AcaoTile } from './TileParticipante';
 import { TiraParticipantes } from './TiraParticipantes';
 import { VideoTransmissao } from './VideoTransmissao';
@@ -12,9 +14,19 @@ interface VideoStageProps {
     participantes: Integrante[];
     streamsRemotas: Map<string, MediaStream>;
     acoesPara?: (participante: Integrante) => AcaoTile[];
+    diagnostico: DiagnosticoPeer[];
+    onAbrirDiagnostico: () => void;
 }
 
-export function VideoStage({ streamLocal, meuId, participantes, streamsRemotas, acoesPara }: VideoStageProps) {
+export function VideoStage({
+    streamLocal,
+    meuId,
+    participantes,
+    streamsRemotas,
+    acoesPara,
+    diagnostico,
+    onAbrirDiagnostico,
+}: VideoStageProps) {
     const sharer = participantes.find((p) => p.compartilhando) ?? null;
 
     if (!sharer) {
@@ -31,7 +43,13 @@ export function VideoStage({ streamLocal, meuId, participantes, streamsRemotas, 
                     <VideoTransmissao
                         stream={souEuQueCompartilho ? streamLocal : (streamRemotaAtiva ?? null)}
                         mudo={souEuQueCompartilho}
+                        controles={!souEuQueCompartilho}
                         className="h-full w-full object-contain"
+                    />
+                    <IndicadorConexao
+                        diagnostico={diagnostico}
+                        souQuemTransmite={souEuQueCompartilho}
+                        onAbrir={onAbrirDiagnostico}
                     />
                     <span
                         className="absolute bottom-3 left-3 rounded-md px-2.5 py-1 text-xs font-medium text-ink"
