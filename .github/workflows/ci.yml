@@ -53,6 +53,10 @@ jobs:
         working-directory: contela-fe
         run: npm ci
 
+      - name: Gerar os tipos das rotas do Next
+        working-directory: contela-fe
+        run: npx next typegen
+
       - name: Checar tipos
         working-directory: contela-fe
         run: npx tsc --noEmit
