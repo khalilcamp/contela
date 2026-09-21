@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (testes unitários)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Compilar e rodar os testes
+        working-directory: be
+        run: mvn -B verify
+
+      - name: Guardar o .jar para os testes de integração
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: be/target/be-*.jar
+          if-no-files-found: error
+          retention-days: 1
+
+  frontend:
+    name: Frontend (tipos, lint e build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: contela-fe/package-lock.json
+
+      - name: Instalar dependências
+        working-directory: contela-fe
+        run: npm ci
+
+      - name: Checar tipos
+        working-directory: contela-fe
+        run: npx tsc --noEmit
+
+      - name: Lint
+        working-directory: contela-fe
+        run: npx eslint .
+
+      - name: Build
+        working-directory: contela-fe
+        run: npx next build
+
+  integracao:
+    name: Integração (segurança, encerramento de sala e aviso de versão)
+    needs: backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: contela-fe/package-lock.json
+
+      - name: Baixar o .jar do backend
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: be/target
+
+      - name: Instalar dependências do front (clientes STOMP dos testes)
+        working-directory: contela-fe
+        run: npm ci
+
+      - name: Rodar as suítes de integração
+        working-directory: contela-fe
+        run: npm run test:integracao
