@@ -17,6 +17,7 @@ import {
 import { DiagnosticoPeer } from '../lib/diagnostico';
 import { ERRO_SEM_AUDIO, GerenciadorWebRTC } from '../lib/webrtc';
 import { SalaResponse, MensagemResponse, SinalWebRTC } from '../types/sala';
+import { EstadoServidor, estadoDoServidor, garantirServidor, observarServidor } from '../lib/servidor';
 import { OpcoesCompartilhamento } from '../types/compartilhamento';
 
 export interface PreviaTransmissao {
@@ -48,6 +49,8 @@ export function useSalaConexao() {
     const [senha, setSenha] = useState('');
     const [conectado, setConectado] = useState(false);
     const [entrando, setEntrando] = useState(false);
+    const [servidor, setServidor] = useState<EstadoServidor>(estadoDoServidor);
+    const [servidorAcordou, setServidorAcordou] = useState(false);
     const [erro, setErro] = useState<string | null>(null);
     const [atualizacao, setAtualizacao] = useState<AvisoVersao | null>(null);
     const [meuId, setMeuId] = useState<string | null>(null);
@@ -83,6 +86,15 @@ export function useSalaConexao() {
             clearInterval(intervalo);
         };
     }, [conectado, transmissaoAtiva]);
+
+    useEffect(() => {
+        const parar = observarServidor((novo) => {
+            setServidor(novo);
+            if (novo === 'acordando') setServidorAcordou(true);
+        });
+        void garantirServidor();
+        return parar;
+    }, []);
 
     useEffect(() => {
         const daUrl = new URLSearchParams(window.location.search).get('sala');
@@ -267,9 +279,20 @@ export function useSalaConexao() {
         client.activate();
     }
 
-    function handleEntrar() {
+    async function servidorDisponivel(): Promise<boolean> {
+        if (await garantirServidor()) return true;
+        setEntrando(false);
+        mostrarErro('Não foi possível falar com o servidor. Verifique sua conexão e tente de novo.');
+        return false;
+    }
+
+    async function handleEntrar() {
         const alvo = normalizarSalaId(salaId);
         if (!nome.trim() || !alvo || entrando || clientRef.current) return;
+
+        limparErro();
+        setEntrando(true);
+        if (!(await servidorDisponivel())) return;
         iniciarConexao(alvo, null);
     }
 
@@ -278,6 +301,7 @@ export function useSalaConexao() {
 
         limparErro();
         setEntrando(true);
+        if (!(await servidorDisponivel())) return;
         try {
             const criada = await criarSala(senha);
             setSalaId(criada.id);
@@ -400,6 +424,8 @@ export function useSalaConexao() {
         setSenha,
         conectado,
         entrando,
+        servidor,
+        servidorAcordou,
         erro,
         limparErro,
         atualizacao,

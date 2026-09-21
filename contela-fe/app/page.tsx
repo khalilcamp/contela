@@ -14,6 +14,8 @@ export default function Home() {
     setSenha,
     conectado,
     entrando,
+    servidor,
+    servidorAcordou,
     erro,
     limparErro,
     atualizacao,
@@ -52,6 +54,8 @@ export default function Home() {
             senha={senha}
             erro={erro}
             entrando={entrando}
+            servidor={servidor}
+            servidorAcordou={servidorAcordou}
             onNomeChange={setNome}
             onSalaIdChange={setSalaId}
             onSenhaChange={setSenha}

@@ -11,7 +11,7 @@ function obterWsUrl(): string {
     return `http://${host}:8080/wsock`;
 }
 
-function obterApiUrl(): string {
+export function obterApiUrl(): string {
     return obterWsUrl().replace(/\/wsock$/, '');
 }
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { gerarSenha } from '../lib/senha';
+import type { EstadoServidor } from '../lib/servidor';
 import { IconCopiar, IconSala, IconUsuario } from './icons';
 
 interface FormularioSalaProps {
@@ -10,6 +11,8 @@ interface FormularioSalaProps {
     senha: string;
     erro: string | null;
     entrando: boolean;
+    servidor: EstadoServidor;
+    servidorAcordou: boolean;
     onNomeChange: (valor: string) => void;
     onSalaIdChange: (valor: string) => void;
     onSenhaChange: (valor: string) => void;
@@ -28,6 +31,8 @@ export default function FormularioSala({
     senha,
     erro,
     entrando,
+    servidor,
+    servidorAcordou,
     onNomeChange,
     onSalaIdChange,
     onSenhaChange,
@@ -199,6 +204,23 @@ export default function FormularioSala({
                     </div>
                 )}
 
+                {servidor === 'acordando' && (
+                    <p role="status" className="flex items-start gap-2 text-sm text-mute">
+                        <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-signal motion-safe:animate-pulse" />
+                        O servidor estava dormindo e está acordando. Pode levar até um minuto; não precisa recarregar a página.
+                    </p>
+                )}
+                {servidor === 'pronto' && servidorAcordou && (
+                    <p role="status" className="text-sm text-signal">
+                        Servidor pronto.
+                    </p>
+                )}
+                {servidor === 'fora' && (
+                    <p role="status" className="text-sm text-live">
+                        Não foi possível falar com o servidor agora. Você ainda pode tentar entrar.
+                    </p>
+                )}
+
                 {erro && (
                     <p role="alert" className="text-sm text-live">
                         {erro}
@@ -210,7 +232,7 @@ export default function FormularioSala({
                     disabled={incompleto || entrando}
                     className="mt-1 w-full rounded-lg bg-signal py-2.5 text-sm font-semibold text-signal-ink transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                    {entrando ? 'Conectando' : criando ? 'Criar sala e entrar' : 'Entrar'}
+                    {entrando ? (servidor === 'acordando' ? 'Acordando o servidor...' : 'Conectando') : criando ? 'Criar sala e entrar' : 'Entrar'}
                 </button>
             </div>
         </form>

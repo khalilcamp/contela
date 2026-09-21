@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { linkDoApp, salaIdValido } from '../lib/convite';
+import type { EstadoServidor } from '../lib/servidor';
 import { DialogoSeguranca } from '../components/DialogoSeguranca';
 import FormularioSala from '../components/formularioSala';
 import { IconEscudo } from '../components/icons';
@@ -12,6 +13,8 @@ interface EntrarTelaProps {
     senha: string;
     erro: string | null;
     entrando: boolean;
+    servidor: EstadoServidor;
+    servidorAcordou: boolean;
     onNomeChange: (valor: string) => void;
     onSalaIdChange: (valor: string) => void;
     onSenhaChange: (valor: string) => void;
@@ -25,6 +28,8 @@ export default function EntrarTela({
     senha,
     erro,
     entrando,
+    servidor,
+    servidorAcordou,
     onNomeChange,
     onSalaIdChange,
     onSenhaChange,
@@ -72,6 +77,8 @@ export default function EntrarTela({
                         senha={senha}
                         erro={erro}
                         entrando={entrando}
+                        servidor={servidor}
+                        servidorAcordou={servidorAcordou}
                         onNomeChange={onNomeChange}
                         onSalaIdChange={onSalaIdChange}
                         onSenhaChange={onSenhaChange}
