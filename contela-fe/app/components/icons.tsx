@@ -140,3 +140,39 @@ export function IconJanela({ className }: IconProps) {
         </svg>
     );
 }
+
+export function IconTeclado({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <rect x="2.5" y="6" width="19" height="12" rx="2" />
+            <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10" />
+        </svg>
+    );
+}
+
+export function IconSino({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9z" />
+            <path d="M10 19a2 2 0 0 0 4 0" />
+        </svg>
+    );
+}
+
+export function IconSinoOff({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9z" />
+            <path d="M10 19a2 2 0 0 0 4 0M3 3l18 18" />
+        </svg>
+    );
+}
+
+export function IconLink({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1" />
+            <path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" />
+        </svg>
+    );
+}

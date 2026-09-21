@@ -7,7 +7,10 @@ import { AvisoVersao } from '../lib/websocket';
 import { DiagnosticoPeer } from '../lib/diagnostico';
 import { VERSAO_APP, plataformaAtual } from '../lib/versao';
 import { DialogoDiagnostico } from '../components/DialogoDiagnostico';
+import { DialogoAtalhos } from '../components/DialogoAtalhos';
 import { DialogoPrevia } from '../components/DialogoPrevia';
+import { useAtalhos } from '../hooks/useAtalhos';
+import { useNotificacoesChat } from '../hooks/useNotificacoesChat';
 import { DrawerCompartilhamento } from '../components/DrawerCompartilhamento';
 import type { PreviaTransmissao } from '../hooks/useSalaConexao';
 import { Topbar } from '../components/Topbar';
@@ -78,6 +81,27 @@ export default function CompartilhamentoTela({
 }: CompartilhamentoTelaProps) {
     const [drawerAberto, setDrawerAberto] = useState(false);
     const [diagnosticoAberto, setDiagnosticoAberto] = useState(false);
+    const [atalhosAbertos, setAtalhosAbertos] = useState(false);
+    const [silenciado, setSilenciado] = useState(false);
+
+    const { naoLidas, notificacoes, alternarNotificacoes } = useNotificacoesChat({
+        mensagens,
+        meuId,
+        chatAberto,
+        onAbrirChat: () => {
+            if (!chatAberto) onToggleChat();
+        },
+    });
+
+    const { globais, alterarGlobais, falhas } = useAtalhos((acao) => {
+        if (acao === 'silenciar') setSilenciado((atual) => !atual);
+        else if (acao === 'chat') onToggleChat();
+        else if (acao === 'chat-abrir') {
+            if (!chatAberto) onToggleChat();
+        } else if (acao === 'parar') {
+            if (compartilhando) onPararCompartilhamento();
+        } else if (acao === 'ajuda') setAtalhosAbertos((atual) => !atual);
+    });
     const participantes = sala?.participantes ?? [];
     const outroCompartilhando = participantes.some((p) => p.compartilhando && p.id !== meuId);
 
@@ -102,7 +126,9 @@ export default function CompartilhamentoTela({
                 souDono={souDono}
                 acoesPara={acoesPara}
                 chatAberto={chatAberto}
+                naoLidas={naoLidas}
                 onToggleChat={onToggleChat}
+                onAbrirAtalhos={() => setAtalhosAbertos(true)}
                 onSair={onSair}
             />
 
@@ -120,6 +146,8 @@ export default function CompartilhamentoTela({
                         acoesPara={acoesPara}
                         diagnostico={diagnostico}
                         onAbrirDiagnostico={() => setDiagnosticoAberto(true)}
+                        silenciado={silenciado}
+                        onSilenciadoChange={setSilenciado}
                     />
 
                     <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
@@ -141,6 +169,8 @@ export default function CompartilhamentoTela({
                         onTextoChange={onTextoChange}
                         onEnviar={onEnviarMensagem}
                         meuId={meuId}
+                        notificacoes={notificacoes}
+                        onAlternarNotificacoes={alternarNotificacoes}
                     />
                 )}
             </div>
@@ -166,6 +196,14 @@ export default function CompartilhamentoTela({
                     setDrawerAberto(false);
                     onCompartilhar(opcoes, fonteId, nomeFonte);
                 }}
+            />
+
+            <DialogoAtalhos
+                aberto={atalhosAbertos}
+                onFechar={() => setAtalhosAbertos(false)}
+                globais={globais}
+                onAlterarGlobais={alterarGlobais}
+                falhas={falhas}
             />
 
             {previa && (

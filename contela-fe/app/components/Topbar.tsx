@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Integrante } from '../types/sala';
 import { Avatar } from './Avatar';
 import { DialogoSeguranca } from './DialogoSeguranca';
-import { IconChat, IconCopiar, IconEscudo, IconSair } from './icons';
+import { textoDoConvite, melhorLink } from '../lib/convite';
+import { IconChat, IconCopiar, IconEscudo, IconLink, IconSair, IconTeclado } from './icons';
 import { ListaParticipantes } from './ListaParticipantes';
 import { AcaoTile } from './TileParticipante';
 
@@ -17,7 +18,9 @@ interface TopbarProps {
     souDono: boolean;
     acoesPara?: (participante: Integrante) => AcaoTile[];
     chatAberto: boolean;
+    naoLidas: number;
     onToggleChat: () => void;
+    onAbrirAtalhos: () => void;
     onSair: () => void;
 }
 
@@ -30,10 +33,13 @@ export function Topbar({
     souDono,
     acoesPara,
     chatAberto,
+    naoLidas,
     onToggleChat,
+    onAbrirAtalhos,
     onSair,
 }: TopbarProps) {
     const [copiado, setCopiado] = useState(false);
+    const [linkCopiado, setLinkCopiado] = useState(false);
     const [segurancaAberta, setSegurancaAberta] = useState(false);
     const [listaAberta, setListaAberta] = useState(false);
     const listaRef = useRef<HTMLDivElement>(null);
@@ -54,14 +60,18 @@ export function Topbar({
     }, [listaAberta]);
 
     async function copiarConvite() {
-        const convite = window.location.protocol.startsWith('http')
-            ? `${window.location.origin}/?sala=${salaId}`
-            : salaId;
-        const texto = souDono && senhaSala ? `${convite}\nSenha: ${senhaSala}` : convite;
         try {
-            await navigator.clipboard.writeText(texto);
+            await navigator.clipboard.writeText(textoDoConvite(salaId, souDono ? senhaSala : undefined));
             setCopiado(true);
             setTimeout(() => setCopiado(false), 2000);
+        } catch {}
+    }
+
+    async function copiarLink() {
+        try {
+            await navigator.clipboard.writeText(melhorLink(salaId));
+            setLinkCopiado(true);
+            setTimeout(() => setLinkCopiado(false), 2000);
         } catch {}
     }
 
@@ -80,6 +90,16 @@ export function Topbar({
                 ) : (
                     <IconCopiar className="h-3.5 w-3.5 text-mute" />
                 )}
+            </button>
+
+            <button
+                onClick={copiarLink}
+                title="Copiar link da sala"
+                aria-label="Copiar link da sala"
+                className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-mute transition hover:bg-ink-3 hover:text-paper focus-visible:outline-2 focus-visible:outline-signal"
+            >
+                <IconLink className="h-3.5 w-3.5" />
+                {linkCopiado && <span className="text-signal">Link copiado</span>}
             </button>
 
             {souDono && <span className="text-xs text-signal">Anfitrião</span>}
@@ -130,14 +150,31 @@ export function Topbar({
                 </button>
 
                 <button
+                    onClick={onAbrirAtalhos}
+                    title="Atalhos de teclado (?)"
+                    aria-label="Atalhos de teclado"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink-3 text-mute transition hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
+                >
+                    <IconTeclado className="h-4 w-4" />
+                </button>
+
+                <button
                     onClick={onToggleChat}
                     title="Chat"
                     aria-pressed={chatAberto}
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
+                    className={`relative flex h-8 w-8 items-center justify-center rounded-lg transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
                         chatAberto ? 'bg-signal text-signal-ink' : 'bg-ink-3 text-mute hover:text-paper'
                     }`}
                 >
                     <IconChat className="h-4 w-4" />
+                    {naoLidas > 0 && (
+                        <span
+                            aria-label={`${naoLidas} mensagens não lidas`}
+                            className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-live px-1 text-[10px] font-semibold leading-none text-white"
+                        >
+                            {naoLidas > 9 ? '9+' : naoLidas}
+                        </span>
+                    )}
                 </button>
 
                 <button

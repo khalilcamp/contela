@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, protocol, net, session, desktopCapturer, shell, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, protocol, net, session, desktopCapturer, shell, ipcMain, globalShortcut, Notification, nativeImage } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { spawn } = require('node:child_process');
@@ -240,6 +240,82 @@ function publicarStatusAtualizacao(status) {
     if (janela && !janela.isDestroyed()) janela.webContents.send('contela:atualizacao', status);
 }
 
+const ATALHOS_GLOBAIS = {
+    'CommandOrControl+Alt+Shift+M': 'silenciar',
+    'CommandOrControl+Alt+Shift+C': 'chat',
+    'CommandOrControl+Alt+Shift+S': 'parar',
+};
+
+function desativarAtalhosGlobais() {
+    Object.keys(ATALHOS_GLOBAIS).forEach((acelerador) => globalShortcut.unregister(acelerador));
+}
+
+function ativarAtalhosGlobais() {
+    desativarAtalhosGlobais();
+    const registrados = [];
+    const falhas = [];
+    for (const [acelerador, acao] of Object.entries(ATALHOS_GLOBAIS)) {
+        const rotulo = acelerador.replace('CommandOrControl', 'Ctrl').replaceAll('+', ' + ');
+        const ok = globalShortcut.register(acelerador, () => {
+            if (!janela || janela.isDestroyed()) return;
+            if (acao === 'chat' && (!janela.isVisible() || janela.isMinimized() || !janela.isFocused())) {
+                if (janela.isMinimized()) janela.restore();
+                janela.show();
+                janela.focus();
+                janela.webContents.send('contela:atalho', 'chat-abrir');
+                return;
+            }
+            janela.webContents.send('contela:atalho', acao);
+        });
+        (ok ? registrados : falhas).push(rotulo);
+    }
+    return { registrados, falhas };
+}
+
+ipcMain.handle('contela:atalhos', (evento, ativo) => {
+    if (!remetenteConfiavel(evento)) return { registrados: [], falhas: [] };
+    if (!ativo) {
+        desativarAtalhosGlobais();
+        return { registrados: [], falhas: [] };
+    }
+    return ativarAtalhosGlobais();
+});
+
+function trazerJanelaParaFrente() {
+    if (!janela || janela.isDestroyed()) return;
+    if (janela.isMinimized()) janela.restore();
+    janela.show();
+    janela.focus();
+}
+
+ipcMain.handle('contela:notificar', (evento, aviso) => {
+    if (!remetenteConfiavel(evento) || !aviso || typeof aviso.titulo !== 'string' || typeof aviso.corpo !== 'string') return false;
+    if (!janela || janela.isDestroyed() || (janela.isFocused() && !janela.isMinimized()) || !Notification.isSupported()) return false;
+
+    const notificacao = new Notification({ title: aviso.titulo.slice(0, 60), body: aviso.corpo.slice(0, 200) });
+    notificacao.on('click', () => {
+        trazerJanelaParaFrente();
+        if (janela && !janela.isDestroyed()) janela.webContents.send('contela:atalho', 'chat-abrir');
+    });
+    notificacao.show();
+    return true;
+});
+
+ipcMain.handle('contela:nao-lidas', (evento, quantidade, icone) => {
+    if (!remetenteConfiavel(evento) || !janela || janela.isDestroyed()) return false;
+    const qtd = Number.isInteger(quantidade) ? Math.max(0, Math.min(quantidade, 999)) : 0;
+
+    if (qtd === 0) {
+        janela.setOverlayIcon(null, '');
+        janela.flashFrame(false);
+        return true;
+    }
+    const iconeValido = typeof icone === 'string' && icone.startsWith('data:image/png;base64,') && icone.length < 30000;
+    if (iconeValido) janela.setOverlayIcon(nativeImage.createFromDataURL(icone), `${qtd} mensagens não lidas`);
+    if (!janela.isFocused()) janela.flashFrame(true);
+    return true;
+});
+
 const TEMPO_MAXIMO_VERIFICACAO_MS = 5000;
 const demoAbertura = !app.isPackaged && process.env.CONTELA_ABERTURA_DEMO === '1';
 let abertura = null;
@@ -431,7 +507,9 @@ function criarJanela() {
         evento.preventDefault();
         abrirExterno(url);
     });
+    janela.on('focus', () => janela.flashFrame(false));
     janela.on('closed', () => {
+        desativarAtalhosGlobais();
         pararCapturaJanela();
         janela = null;
     });
@@ -464,6 +542,7 @@ if (!app.requestSingleInstanceLock()) {
     });
 
     app.whenReady().then(() => {
+        if (process.platform === 'win32') app.setAppUserModelId('com.contela.app');
         if (usarEstatico) registrarProtocoloApp();
         registrarCapturaDeTela();
 
@@ -473,7 +552,10 @@ if (!app.requestSingleInstanceLock()) {
         iniciarApp();
     });
 
-    app.on('will-quit', pararCapturaJanela);
+    app.on('will-quit', () => {
+        globalShortcut.unregisterAll();
+        pararCapturaJanela();
+    });
 
     app.on('window-all-closed', () => {
         if (process.platform !== 'darwin') app.quit();

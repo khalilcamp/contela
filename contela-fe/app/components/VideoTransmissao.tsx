@@ -8,6 +8,8 @@ interface VideoTransmissaoProps {
     stream: MediaStream | null;
     mudo: boolean;
     controles?: boolean;
+    silenciado: boolean;
+    onSilenciadoChange: (silenciado: boolean) => void;
     className?: string;
 }
 
@@ -24,11 +26,17 @@ function lerVolumeSalvo(): number {
     }
 }
 
-export function VideoTransmissao({ stream, mudo, controles = false, className }: VideoTransmissaoProps) {
+export function VideoTransmissao({
+    stream,
+    mudo,
+    controles = false,
+    silenciado,
+    onSilenciadoChange,
+    className,
+}: VideoTransmissaoProps) {
     const ref = useRef<HTMLVideoElement>(null);
     const recipienteRef = useRef<HTMLDivElement>(null);
     const [volume, setVolume] = useState(lerVolumeSalvo);
-    const [silenciado, setSilenciado] = useState(false);
     const [temVideo, setTemVideo] = useState(true);
 
     useEffect(() => {
@@ -55,7 +63,7 @@ export function VideoTransmissao({ stream, mudo, controles = false, className }:
 
     function alterarVolume(novo: number) {
         setVolume(novo);
-        setSilenciado(novo === 0);
+        onSilenciadoChange(novo === 0);
         try {
             window.localStorage.setItem(CHAVE_VOLUME, String(novo));
         } catch {}
@@ -78,7 +86,7 @@ export function VideoTransmissao({ stream, mudo, controles = false, className }:
             {controles && (
                 <div className="absolute bottom-3 right-3 flex items-center gap-2 rounded-lg bg-black/70 px-2.5 py-1.5 text-paper opacity-0 backdrop-blur-sm transition focus-within:opacity-100 group-hover:opacity-100">
                     <button
-                        onClick={() => setSilenciado((atual) => !atual)}
+                        onClick={() => onSilenciadoChange(!silenciado)}
                         aria-label={semSom ? 'Ativar som' : 'Silenciar'}
                         title={semSom ? 'Ativar som' : 'Silenciar'}
                         className="rounded p-1 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-signal"

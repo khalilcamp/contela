@@ -1,6 +1,6 @@
 import { MensagemResponse } from '../types/sala';
 import { Avatar } from './Avatar';
-import { IconSend } from './icons';
+import { IconSend, IconSino, IconSinoOff } from './icons';
 
 interface ChatPanelProps {
     mensagens: MensagemResponse[];
@@ -8,16 +8,39 @@ interface ChatPanelProps {
     onTextoChange: (valor: string) => void;
     onEnviar: () => void;
     meuId: string | null;
+    notificacoes: boolean;
+    onAlternarNotificacoes: () => void;
 }
 
 function formatarHora(iso: string): string {
     return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function ChatPanel({ mensagens, texto, onTextoChange, onEnviar, meuId }: ChatPanelProps) {
+export function ChatPanel({
+    mensagens,
+    texto,
+    onTextoChange,
+    onEnviar,
+    meuId,
+    notificacoes,
+    onAlternarNotificacoes,
+}: ChatPanelProps) {
     return (
         <div className="my-3 mr-3 flex w-72 shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-ink-2/80 backdrop-blur-xl">
-            <div className="flex h-12 items-center border-b border-line px-4 font-display font-semibold text-paper">Chat</div>
+            <div className="flex h-12 items-center justify-between border-b border-line pl-4 pr-2 font-display font-semibold text-paper">
+                Chat
+                <button
+                    onClick={onAlternarNotificacoes}
+                    aria-pressed={notificacoes}
+                    aria-label="Notificações de mensagens"
+                    title={notificacoes ? 'Notificações ligadas' : 'Notificações desligadas'}
+                    className={`rounded-md p-1.5 transition hover:bg-ink-3 focus-visible:outline-2 focus-visible:outline-signal ${
+                        notificacoes ? 'text-signal' : 'text-mute'
+                    }`}
+                >
+                    {notificacoes ? <IconSino className="h-4 w-4" /> : <IconSinoOff className="h-4 w-4" />}
+                </button>
+            </div>
 
             <div className="flex-1 overflow-y-auto px-3 py-3 [scrollbar-color:rgba(255,255,255,0.18)_transparent] [scrollbar-width:thin]">
                 {mensagens.length === 0 && <p className="text-sm text-mute">Nenhuma mensagem ainda.</p>}

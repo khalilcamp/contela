@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { linkDoApp, salaIdValido } from '../lib/convite';
 import { DialogoSeguranca } from '../components/DialogoSeguranca';
 import FormularioSala from '../components/formularioSala';
 import { IconEscudo } from '../components/icons';
@@ -31,6 +32,12 @@ export default function EntrarTela({
     onCriar,
 }: EntrarTelaProps) {
     const [segurancaAberta, setSegurancaAberta] = useState(false);
+    const [noNavegador, setNoNavegador] = useState(false);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- window so existe no cliente (evita hydration mismatch)
+        setNoNavegador(window.contela === undefined);
+    }, []);
 
     return (
         <div
@@ -71,6 +78,17 @@ export default function EntrarTela({
                         onEntrar={onEntrar}
                         onCriar={onCriar}
                     />
+                    {noNavegador && salaIdValido(salaId) && (
+                        <p className="mt-4 text-xs text-mute">
+                            Tem o app do Contela instalado?{' '}
+                            <a
+                                href={linkDoApp(salaId)}
+                                className="text-signal underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-signal"
+                            >
+                                Abrir esta sala no app
+                            </a>
+                        </p>
+                    )}
                     <button
                         type="button"
                         onClick={() => setSegurancaAberta(true)}

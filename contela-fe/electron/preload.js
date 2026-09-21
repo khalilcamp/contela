@@ -9,6 +9,14 @@ contextBridge.exposeInMainWorld('contela', {
         ipcRenderer.on('contela:sala', handler);
         return () => ipcRenderer.removeListener('contela:sala', handler);
     },
+    ativarAtalhos: (ativo) => ipcRenderer.invoke('contela:atalhos', ativo),
+    aoAtalho: (cb) => {
+        const handler = (_e, acao) => cb(acao);
+        ipcRenderer.on('contela:atalho', handler);
+        return () => ipcRenderer.removeListener('contela:atalho', handler);
+    },
+    notificar: (aviso) => ipcRenderer.invoke('contela:notificar', aviso),
+    definirNaoLidas: (quantidade, icone) => ipcRenderer.invoke('contela:nao-lidas', quantidade, icone),
     atualizacaoStatus: () => ipcRenderer.invoke('contela:atualizacao-status'),
     aoMudarAtualizacao: (cb) => {
         const handler = (_e, status) => cb(status);

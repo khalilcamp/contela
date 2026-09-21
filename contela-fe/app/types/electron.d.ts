@@ -21,6 +21,10 @@ declare global {
             audioPorJanela: boolean;
             salaInicial: () => Promise<string | null>;
             aoReceberSala: (cb: (salaId: string) => void) => () => void;
+            ativarAtalhos: (ativo: boolean) => Promise<{ registrados: string[]; falhas: string[] }>;
+            aoAtalho: (cb: (acao: 'silenciar' | 'chat' | 'chat-abrir' | 'parar') => void) => () => void;
+            notificar: (aviso: { titulo: string; corpo: string }) => Promise<boolean>;
+            definirNaoLidas: (quantidade: number, icone: string | null) => Promise<boolean>;
             atualizacaoStatus: () => Promise<StatusAtualizacao>;
             aoMudarAtualizacao: (cb: (status: StatusAtualizacao) => void) => () => void;
             reiniciarParaAtualizar: () => Promise<void>;

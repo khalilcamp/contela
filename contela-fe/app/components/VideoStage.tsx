@@ -16,6 +16,8 @@ interface VideoStageProps {
     acoesPara?: (participante: Integrante) => AcaoTile[];
     diagnostico: DiagnosticoPeer[];
     onAbrirDiagnostico: () => void;
+    silenciado: boolean;
+    onSilenciadoChange: (silenciado: boolean) => void;
 }
 
 export function VideoStage({
@@ -26,6 +28,8 @@ export function VideoStage({
     acoesPara,
     diagnostico,
     onAbrirDiagnostico,
+    silenciado,
+    onSilenciadoChange,
 }: VideoStageProps) {
     const sharer = participantes.find((p) => p.compartilhando) ?? null;
 
@@ -44,6 +48,8 @@ export function VideoStage({
                         stream={souEuQueCompartilho ? streamLocal : (streamRemotaAtiva ?? null)}
                         mudo={souEuQueCompartilho}
                         controles={!souEuQueCompartilho}
+                        silenciado={silenciado}
+                        onSilenciadoChange={onSilenciadoChange}
                         className="h-full w-full object-contain"
                     />
                     <IndicadorConexao
