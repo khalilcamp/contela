@@ -2,6 +2,7 @@ package com.comtela.be.config;
 
 import com.comtela.be.seguranca.InterceptadorHandshake;
 import com.comtela.be.seguranca.InterceptadorSeguranca;
+import com.comtela.be.seguranca.LimitadorConexoesConcorrentes;
 import com.comtela.be.seguranca.RegistroSessoes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,7 @@ public class ConfigWebS implements WebSocketMessageBrokerConfigurer {
     private final InterceptadorSeguranca interceptadorSeguranca;
     private final InterceptadorHandshake interceptadorHandshake;
     private final RegistroSessoes registroSessoes;
+    private final LimitadorConexoesConcorrentes limitadorConexoesConcorrentes;
 
     @Autowired
     @Lazy
@@ -70,6 +72,10 @@ public class ConfigWebS implements WebSocketMessageBrokerConfigurer {
                     @Override
                     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
                         registroSessoes.remover(session);
+                        Object ip = session.getAttributes().get(InterceptadorHandshake.ATRIBUTO_IP);
+                        if (ip instanceof String ipStr) {
+                            limitadorConexoesConcorrentes.liberar(ipStr);
+                        }
                         super.afterConnectionClosed(session, closeStatus);
                     }
                 });

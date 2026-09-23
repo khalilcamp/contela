@@ -4,6 +4,7 @@ import com.comtela.be.dto.ResponseErro;
 import com.comtela.be.seguranca.LimitadorTaxa;
 import com.comtela.be.seguranca.RegistroSessoes;
 import com.comtela.be.service.SalaService;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,18 @@ public class AdminController {
     private final SimpMessagingTemplate messagingTemplate;
     private final RegistroSessoes registroSessoes;
     private final LimitadorTaxa limitador;
+
+    @PostConstruct
+    void avisarStatusChave() {
+        if (chave == null || chave.isBlank()) {
+            log.info("Endpoint /api/admin/salas/*/encerrar desativado (app.admin.chave nao configurada).");
+        } else if (chave.length() < TAMANHO_MINIMO_CHAVE) {
+            log.warn("app.admin.chave configurada mas curta demais ({} caracteres, minimo {}) - endpoint permanece desativado.",
+                    chave.length(), TAMANHO_MINIMO_CHAVE);
+        } else {
+            log.info("Endpoint /api/admin/salas/*/encerrar ativo.");
+        }
+    }
 
     @PostMapping("/salas/{salaId}/encerrar")
     public ResponseEntity<?> encerrar(@PathVariable String salaId,
