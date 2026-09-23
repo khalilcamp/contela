@@ -1,6 +1,6 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { SalaResponse, MensagemResponse, SinalWebRTC, TipoMensagem } from '../types/sala';
+import { SalaResponse, MensagemResponse, SinalWebRTC, TipoMensagem, DigitandoEvento } from '../types/sala';
 import { SERVIDORES_ICE_PADRAO } from './ice';
 import { VERSAO_APP, plataformaAtual } from './versao';
 
@@ -84,6 +84,7 @@ export interface EventosSala {
     onErro: (mensagem: string) => void;
     onExpulso: (motivo: string) => void;
     onAviso: (aviso: AvisoVersao) => void;
+    onDigitando: (evento: DigitandoEvento) => void;
 }
 
 export interface AvisoVersao {
@@ -103,6 +104,7 @@ export function entrarNaSala(client: Client, salaId: string, dados: DadosEntrada
 
         client.subscribe(`/topic/sala/${confirmacao.salaId}/participantes`, (m) => eventos.onParticipantes(JSON.parse(m.body)));
         client.subscribe(`/topic/sala/${confirmacao.salaId}/chat`, (m) => eventos.onMensagem(JSON.parse(m.body)));
+        client.subscribe(`/topic/sala/${confirmacao.salaId}/digitando`, (m) => eventos.onDigitando(JSON.parse(m.body)));
         client.publish({ destination: `/app/sala/${confirmacao.salaId}/sincronizar`, body: '' });
     });
 
@@ -160,4 +162,8 @@ export function expulsarParticipante(client: Client, salaId: string, alvoId: str
         destination: `/app/sala/${salaId}/expulsar`,
         body: JSON.stringify({ alvoId }),
     });
+}
+
+export function enviarDigitando(client: Client, salaId: string) {
+    client.publish({ destination: `/app/sala/${salaId}/digitando`, body: '' });
 }

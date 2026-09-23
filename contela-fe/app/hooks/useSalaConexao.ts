@@ -8,6 +8,7 @@ import {
     criarClienteStomp,
     criarSala,
     entrarNaSala,
+    enviarDigitando,
     enviarMensagem,
     enviarStatusCompartilhamento,
     expulsarParticipante,
@@ -37,6 +38,8 @@ export interface PreviaTransmissao {
 
 const TEMPO_AVISO_MS = 8000;
 const TEMPO_LIMITE_ENTRADA_MS = 10000;
+const DURACAO_DIGITANDO_MS = 3000;
+const INTERVALO_MINIMO_AVISO_DIGITANDO_MS = 2000;
 
 export function useSalaConexao() {
     const clientRef = useRef<Client | null>(null);
@@ -51,6 +54,8 @@ export function useSalaConexao() {
     const sinaisPendentesRef = useRef<SinalWebRTC[]>([]);
     const temporizadorEntradaRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const temporizadorAvisoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const ultimoAvisoDigitandoRef = useRef(0);
+    const temporizadoresDigitandoRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
     const [nome, setNome] = useState('');
     const [salaId, setSalaId] = useState('');
@@ -77,6 +82,7 @@ export function useSalaConexao() {
     const [chatAberto, setChatAberto] = useState(true);
     const [diagnostico, setDiagnostico] = useState<DiagnosticoPeer[]>([]);
     const [tiposServidoresIce, setTiposServidoresIce] = useState<string[]>([]);
+    const [digitando, setDigitando] = useState<Set<string>>(new Set());
 
     const transmissaoAtiva = sala?.participantes.some((p) => p.compartilhando) ?? false;
 
@@ -194,6 +200,9 @@ export function useSalaConexao() {
         setStreamsRemotas(new Map());
         setCompartilhando(false);
         setAtualizacao(null);
+        temporizadoresDigitandoRef.current.forEach((t) => clearTimeout(t));
+        temporizadoresDigitandoRef.current = new Map();
+        setDigitando(new Set());
         if (mensagem) mostrarErro(mensagem);
     }
 
@@ -284,6 +293,26 @@ export function useSalaConexao() {
                     else encerrarSessao(mensagem);
                 },
                 onAviso: setAtualizacao,
+                onDigitando: (evento) => {
+                    if (evento.integranteId === meuIdRef.current) return;
+
+                    setDigitando((prev) => new Set(prev).add(evento.integranteId));
+
+                    const temporizadores = temporizadoresDigitandoRef.current;
+                    const existente = temporizadores.get(evento.integranteId);
+                    if (existente) clearTimeout(existente);
+                    temporizadores.set(
+                        evento.integranteId,
+                        setTimeout(() => {
+                            temporizadores.delete(evento.integranteId);
+                            setDigitando((prev) => {
+                                const novo = new Set(prev);
+                                novo.delete(evento.integranteId);
+                                return novo;
+                            });
+                        }, DURACAO_DIGITANDO_MS)
+                    );
+                },
                 onExpulso: (motivo) =>
                     encerrarSessao(
                         motivo === 'encerrada'
@@ -357,6 +386,14 @@ export function useSalaConexao() {
     function handleEnviarGif(url: string) {
         if (!clientRef.current || !salaIdAtualRef.current) return;
         enviarMensagem(clientRef.current, salaIdAtualRef.current, url, 'GIF');
+    }
+
+    function handleDigitar() {
+        if (!clientRef.current || !salaIdAtualRef.current) return;
+        const agora = Date.now();
+        if (agora - ultimoAvisoDigitandoRef.current < INTERVALO_MINIMO_AVISO_DIGITANDO_MS) return;
+        ultimoAvisoDigitandoRef.current = agora;
+        enviarDigitando(clientRef.current, salaIdAtualRef.current);
     }
 
     async function handleCompartilhar(opcoes: OpcoesCompartilhamento, fonteId: string | null, nomeFonte: string | null = null) {
@@ -489,6 +526,8 @@ export function useSalaConexao() {
         handleSair,
         handleEnviarMensagem,
         handleEnviarGif,
+        handleDigitar,
+        digitando,
         previa,
         handleCompartilhar,
         handleConfirmarTransmissao,

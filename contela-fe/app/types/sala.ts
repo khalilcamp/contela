@@ -25,6 +25,10 @@ export interface MensagemResponse {
     enviadaEm: string;
 }
 
+export interface DigitandoEvento {
+    integranteId: string;
+}
+
 export type TipoSinal = 'offer' | 'answer' | 'ice-candidate' | 'compartilhamento-parado';
 
 export interface SinalWebRTC {

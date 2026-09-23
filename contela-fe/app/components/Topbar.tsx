@@ -23,6 +23,8 @@ interface TopbarProps {
     onAbrirAtalhos: () => void;
     sonsAtivos: boolean;
     onAlternarSons: () => void;
+    estaMudo: (nome: string) => boolean;
+    onAlternarMudo: (nome: string) => void;
     onSair: () => void;
 }
 
@@ -40,6 +42,8 @@ export function Topbar({
     onAbrirAtalhos,
     sonsAtivos,
     onAlternarSons,
+    estaMudo,
+    onAlternarMudo,
     onSair,
 }: TopbarProps) {
     const [copiado, setCopiado] = useState(false);
@@ -140,6 +144,8 @@ export function Topbar({
                             meuId={meuId}
                             donoId={donoId}
                             acoesPara={acoesPara}
+                            estaMudo={estaMudo}
+                            onAlternarMudo={onAlternarMudo}
                         />
                     )}
                 </div>

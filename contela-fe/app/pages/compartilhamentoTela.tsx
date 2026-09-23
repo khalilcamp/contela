@@ -12,6 +12,7 @@ import { DialogoPrevia } from '../components/DialogoPrevia';
 import { useAtalhos } from '../hooks/useAtalhos';
 import { useNotificacoesChat } from '../hooks/useNotificacoesChat';
 import { useSonsSala } from '../hooks/useSonsSala';
+import { useMudoPorPessoa } from '../hooks/useMudoPorPessoa';
 import { DrawerCompartilhamento } from '../components/DrawerCompartilhamento';
 import type { PreviaTransmissao } from '../hooks/useSalaConexao';
 import { Topbar } from '../components/Topbar';
@@ -34,11 +35,14 @@ interface CompartilhamentoTelaProps {
     compartilhando: boolean;
     streamLocal: MediaStream | null;
     streamsRemotas: Map<string, MediaStream>;
+    meuNome: string | null;
     mensagens: MensagemResponse[];
     texto: string;
     onTextoChange: (valor: string) => void;
     onEnviarMensagem: () => void;
     onEnviarGif: (url: string) => void;
+    onDigitar: () => void;
+    digitando: Set<string>;
     previa: PreviaTransmissao | null;
     onCompartilhar: (opcoes: OpcoesCompartilhamento, fonteId: string | null, nomeFonte: string | null) => void;
     onConfirmarTransmissao: () => void;
@@ -66,11 +70,14 @@ export default function CompartilhamentoTela({
     compartilhando,
     streamLocal,
     streamsRemotas,
+    meuNome,
     mensagens,
     texto,
     onTextoChange,
     onEnviarMensagem,
     onEnviarGif,
+    onDigitar,
+    digitando,
     previa,
     onCompartilhar,
     onConfirmarTransmissao,
@@ -90,6 +97,7 @@ export default function CompartilhamentoTela({
     const { naoLidas, notificacoes, alternarNotificacoes } = useNotificacoesChat({
         mensagens,
         meuId,
+        meuNome,
         chatAberto,
         onAbrirChat: () => {
             if (!chatAberto) onToggleChat();
@@ -97,6 +105,7 @@ export default function CompartilhamentoTela({
     });
 
     const { sonsAtivos, alternarSons } = useSonsSala({ participantes: sala?.participantes ?? [], meuId });
+    const { estaMudo, alternarMudo } = useMudoPorPessoa();
 
     const { globais, alterarGlobais, falhas } = useAtalhos((acao) => {
         if (acao === 'silenciar') setSilenciado((atual) => !atual);
@@ -110,6 +119,8 @@ export default function CompartilhamentoTela({
     const participantes = sala?.participantes ?? [];
     const outroCompartilhando = participantes.some((p) => p.compartilhando && p.id !== meuId);
     const participantesPorId = new Map(participantes.map((p) => [p.id, p]));
+    const sharer = participantes.find((p) => p.compartilhando) ?? null;
+    const mudoEfetivo = silenciado || (sharer ? estaMudo(sharer.nome) : false);
 
     const acoesPara = souDono
         ? (p: Integrante) =>
@@ -137,6 +148,8 @@ export default function CompartilhamentoTela({
                 onAbrirAtalhos={() => setAtalhosAbertos(true)}
                 sonsAtivos={sonsAtivos}
                 onAlternarSons={alternarSons}
+                estaMudo={estaMudo}
+                onAlternarMudo={alternarMudo}
                 onSair={onSair}
             />
 
@@ -154,7 +167,7 @@ export default function CompartilhamentoTela({
                         acoesPara={acoesPara}
                         diagnostico={diagnostico}
                         onAbrirDiagnostico={() => setDiagnosticoAberto(true)}
-                        silenciado={silenciado}
+                        silenciado={mudoEfetivo}
                         onSilenciadoChange={setSilenciado}
                     />
 
@@ -177,7 +190,10 @@ export default function CompartilhamentoTela({
                         onTextoChange={onTextoChange}
                         onEnviar={onEnviarMensagem}
                         onEnviarGif={onEnviarGif}
+                        onDigitar={onDigitar}
+                        digitando={digitando}
                         meuId={meuId}
+                        meuNome={meuNome}
                         notificacoes={notificacoes}
                         onAlternarNotificacoes={alternarNotificacoes}
                         participantesPorId={participantesPorId}

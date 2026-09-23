@@ -42,6 +42,8 @@ export default function Home() {
     handleSair,
     handleEnviarMensagem,
     handleEnviarGif,
+    handleDigitar,
+    digitando,
     previa,
     handleCompartilhar,
     handleConfirmarTransmissao,
@@ -90,11 +92,14 @@ export default function Home() {
           compartilhando={compartilhando}
           streamLocal={streamLocal}
           streamsRemotas={streamsRemotas}
+          meuNome={nome}
           mensagens={mensagens}
           texto={texto}
           onTextoChange={setTexto}
           onEnviarMensagem={handleEnviarMensagem}
           onEnviarGif={handleEnviarGif}
+          onDigitar={handleDigitar}
+          digitando={digitando}
           previa={previa}
           onCompartilhar={handleCompartilhar}
           onConfirmarTransmissao={handleConfirmarTransmissao}

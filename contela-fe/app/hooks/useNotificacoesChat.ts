@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { MensagemResponse } from '../types/sala';
+import { mensagemMenciona } from '../lib/mencoes';
 
 const CHAVE_NOTIFICACOES = 'contela:notificacoes';
 const TITULO_APP = 'Contela';
@@ -39,11 +40,12 @@ export function desenharContador(quantidade: number): string | null {
 interface Parametros {
     mensagens: MensagemResponse[];
     meuId: string | null;
+    meuNome: string | null;
     chatAberto: boolean;
     onAbrirChat: () => void;
 }
 
-export function useNotificacoesChat({ mensagens, meuId, chatAberto, onAbrirChat }: Parametros) {
+export function useNotificacoesChat({ mensagens, meuId, meuNome, chatAberto, onAbrirChat }: Parametros) {
     const [naoLidas, setNaoLidas] = useState(0);
     const [ativas, setAtivas] = useState(lerPreferencia);
     const processadasRef = useRef(mensagens.length);
@@ -61,9 +63,9 @@ export function useNotificacoesChat({ mensagens, meuId, chatAberto, onAbrirChat 
             if (m.integranteId === meuId) continue;
             const fora = semFoco();
             if (fora || !estadoRef.current.chatAberto) setNaoLidas((n) => n + 1);
-            if (fora && estadoRef.current.ativas) notificar(m, estadoRef.current.onAbrirChat);
+            if (fora && estadoRef.current.ativas) notificar(m, meuNome, estadoRef.current.onAbrirChat);
         }
-    }, [mensagens, meuId]);
+    }, [mensagens, meuId, meuNome]);
 
     useEffect(() => {
         const zerar = () => {
@@ -111,15 +113,20 @@ export function useNotificacoesChat({ mensagens, meuId, chatAberto, onAbrirChat 
     return { naoLidas, notificacoes: ativas, alternarNotificacoes };
 }
 
-function notificar(mensagem: MensagemResponse, abrirChat: () => void) {
+function notificar(mensagem: MensagemResponse, meuNome: string | null, abrirChat: () => void) {
     const corpo = mensagem.texto.slice(0, 200);
+    const titulo =
+        mensagem.tipo !== 'GIF' && mensagemMenciona(mensagem.texto, meuNome)
+            ? `${mensagem.nomeIntegrante} mencionou você`
+            : mensagem.nomeIntegrante;
+
     if (window.contela?.notificar) {
-        window.contela.notificar({ titulo: mensagem.nomeIntegrante, corpo }).catch(() => {});
+        window.contela.notificar({ titulo, corpo }).catch(() => {});
         return;
     }
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
     try {
-        const aviso = new Notification(mensagem.nomeIntegrante, { body: corpo, tag: 'contela-chat' });
+        const aviso = new Notification(titulo, { body: corpo, tag: 'contela-chat' });
         aviso.onclick = () => {
             window.focus();
             abrirChat();

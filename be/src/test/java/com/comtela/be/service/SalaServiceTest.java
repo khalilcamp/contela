@@ -306,4 +306,17 @@ class SalaServiceTest {
         service.sair(sala1, "a");
         assertEquals(2, service.pessoasOnline());
     }
+
+    @Test
+    void podeAvisarDigitandoRespeitaLimiteDeTaxaERecusaQuemNaoPertenceASala() {
+        String sala = novaSala();
+        entrar(sala, "a", "Ana");
+
+        assertTrue(service.podeAvisarDigitando(sala, "a"));
+        assertTrue(service.podeAvisarDigitando(sala, "a"));
+        assertTrue(service.podeAvisarDigitando(sala, "a"));
+        assertFalse(service.podeAvisarDigitando(sala, "a"));
+
+        assertFalse(service.podeAvisarDigitando(sala, "intruso"));
+    }
 }

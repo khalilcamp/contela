@@ -4,6 +4,7 @@ import { Avatar } from './Avatar';
 import { IconGif, IconSend, IconSino, IconSinoOff } from './icons';
 import { SeletorGif } from './SeletorGif';
 import { giphyDisponivel } from '../lib/giphy';
+import { segmentarMencoes } from '../lib/mencoes';
 
 interface ChatPanelProps {
     mensagens: MensagemResponse[];
@@ -11,7 +12,10 @@ interface ChatPanelProps {
     onTextoChange: (valor: string) => void;
     onEnviar: () => void;
     onEnviarGif: (url: string) => void;
+    onDigitar: () => void;
+    digitando: Set<string>;
     meuId: string | null;
+    meuNome: string | null;
     notificacoes: boolean;
     onAlternarNotificacoes: () => void;
     participantesPorId: Map<string, Integrante>;
@@ -27,12 +31,19 @@ export function ChatPanel({
     onTextoChange,
     onEnviar,
     onEnviarGif,
+    onDigitar,
+    digitando,
     meuId,
+    meuNome,
     notificacoes,
     onAlternarNotificacoes,
     participantesPorId,
 }: ChatPanelProps) {
     const [seletorGifAberto, setSeletorGifAberto] = useState(false);
+    const nomesConhecidos = [...participantesPorId.values()].map((p) => p.nome);
+    const quemDigita = [...digitando]
+        .map((id) => participantesPorId.get(id)?.nome)
+        .filter((nome): nome is string => Boolean(nome));
 
     return (
         <div className="my-3 mr-3 flex w-72 shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-ink-2/80 backdrop-blur-xl">
@@ -58,9 +69,17 @@ export function ChatPanel({
                     const anterior = mensagens[i - 1];
                     const mesmoAutor = anterior?.integranteId === m.integranteId;
                     const autor = participantesPorId.get(m.integranteId);
+                    const segmentos = m.tipo === 'GIF' ? null : segmentarMencoes(m.texto, nomesConhecidos);
+                    const meMenciona =
+                        m.integranteId !== meuId && (segmentos?.some((s) => s.mencao && s.texto.slice(1).toLowerCase() === meuNome?.trim().toLowerCase()) ?? false);
 
                     return (
-                        <div key={m.id} className={`flex gap-2.5 ${mesmoAutor ? 'mt-0.5' : 'mt-3'}`}>
+                        <div
+                            key={m.id}
+                            className={`flex gap-2.5 rounded-lg px-1.5 -mx-1.5 ${mesmoAutor ? 'mt-0.5' : 'mt-3'} ${
+                                meMenciona ? 'bg-signal/10' : ''
+                            }`}
+                        >
                             <div className="w-7 shrink-0">
                                 {!mesmoAutor && (
                                     <Avatar id={m.integranteId} nome={m.nomeIntegrante} tamanho={28} cor={autor?.cor} chapeu={autor?.chapeu} />
@@ -85,12 +104,28 @@ export function ChatPanel({
                                     // eslint-disable-next-line @next/next/no-img-element -- GIF externo do Giphy, sem otimizacao do next/image
                                     <img src={m.texto} alt="GIF" className="mt-0.5 max-h-48 max-w-full rounded-lg" loading="lazy" />
                                 ) : (
-                                    <p className="break-words text-sm text-paper/75">{m.texto}</p>
+                                    <p className="break-words text-sm text-paper/75">
+                                        {segmentos!.map((seg, j) =>
+                                            seg.mencao ? (
+                                                <span key={j} className="rounded bg-signal/20 px-1 font-medium text-signal">
+                                                    {seg.texto}
+                                                </span>
+                                            ) : (
+                                                <span key={j}>{seg.texto}</span>
+                                            )
+                                        )}
+                                    </p>
                                 )}
                             </div>
                         </div>
                     );
                 })}
+
+                {quemDigita.length > 0 && (
+                    <p className="mt-2 text-xs italic text-mute">
+                        {quemDigita.join(', ')} {quemDigita.length === 1 ? 'está digitando' : 'estão digitando'}...
+                    </p>
+                )}
             </div>
 
             <div className="relative border-t border-line p-3">
@@ -106,7 +141,10 @@ export function ChatPanel({
                 <div className="flex items-center gap-2 rounded-lg border border-line bg-ink py-1.5 pl-3 pr-1.5 focus-within:border-signal">
                     <input
                         value={texto}
-                        onChange={(e) => onTextoChange(e.target.value)}
+                        onChange={(e) => {
+                            onTextoChange(e.target.value);
+                            if (e.target.value.trim()) onDigitar();
+                        }}
                         onKeyDown={(e) => e.key === 'Enter' && onEnviar()}
                         placeholder="Enviar mensagem"
                         className="min-w-0 flex-1 bg-transparent py-1 text-sm text-paper outline-none placeholder:text-mute"

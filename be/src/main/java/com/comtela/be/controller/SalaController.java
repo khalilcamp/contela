@@ -158,6 +158,15 @@ public class SalaController {
                 CompletableFuture.delayedExecutor(ATRASO_FECHAMENTO_MS, TimeUnit.MILLISECONDS));
     }
 
+    @MessageMapping("/sala/{salaId}/digitando")
+    public void digitando(@DestinationVariable String salaId, SimpMessageHeaderAccessor headerAccessor) {
+        String integranteId = headerAccessor.getUser().getName();
+        if (!salaService.podeAvisarDigitando(salaId, integranteId)) {
+            return;
+        }
+        messagingTemplate.convertAndSend("/topic/sala/" + salaId + "/digitando", new ResponseDigitando(integranteId));
+    }
+
     @MessageExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
     public void tratarErro(RuntimeException ex, Principal principal) {
         if (principal == null) {

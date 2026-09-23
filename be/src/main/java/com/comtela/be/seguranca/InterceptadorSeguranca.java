@@ -19,9 +19,9 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class InterceptadorSeguranca implements ChannelInterceptor {
 
-    private static final Pattern ASSINATURA_SALA = Pattern.compile("^/topic/sala/([^/]+)/(participantes|chat)$");
+    private static final Pattern ASSINATURA_SALA = Pattern.compile("^/topic/sala/([^/]+)/(participantes|chat|digitando)$");
     private static final Pattern ENVIO_SALA =
-            Pattern.compile("^/app/sala/([^/]+)/(entrar|chat|compartilhar|sinal|sincronizar|parar|expulsar)$");
+            Pattern.compile("^/app/sala/([^/]+)/(entrar|chat|compartilhar|sinal|sincronizar|parar|expulsar|digitando)$");
     private static final Set<String> FILAS_USUARIO =
             Set.of("/user/queue/confirmacao", "/user/queue/sinal", "/user/queue/erro", "/user/queue/expulso", "/user/queue/aviso");
 

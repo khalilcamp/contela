@@ -38,6 +38,8 @@ public class SalaService {
     private static final Set<String> CORES_PERMITIDAS =
             Set.of("#f97316", "#3b82f6", "#22c55e", "#ec4899", "#a855f7", "#2dd4bf");
     private static final Set<String> CHAPEUS_PERMITIDOS = Set.of("nenhum", "festa", "bone");
+    private static final int LIMITE_DIGITANDO_POR_JANELA = 3;
+    private static final long JANELA_DIGITANDO_MS = 3_000;
     private static final int TAMANHO_MAXIMO_NOME = 24;
     private static final int TAMANHO_MINIMO_SENHA = 4;
     private static final int TAMANHO_MAXIMO_SENHA = 64;
@@ -179,6 +181,11 @@ public class SalaService {
             salas.remove(sala.getIdSala(), sala);
             return participantes;
         }
+    }
+
+    public boolean podeAvisarDigitando(String salaId, String integranteId) {
+        return pertence(salaId, integranteId)
+                && limitador.permitir("digitando:" + integranteId, LIMITE_DIGITANDO_POR_JANELA, JANELA_DIGITANDO_MS);
     }
 
     public int pessoasOnline() {
