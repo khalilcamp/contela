@@ -1,7 +1,11 @@
+export type ChapeuEscolha = 'nenhum' | 'festa' | 'bone';
+
 export interface Integrante {
     id: string;
     nome: string;
     compartilhando: boolean;
+    cor: string | null;
+    chapeu: ChapeuEscolha | null;
 }
 
 export interface SalaResponse {

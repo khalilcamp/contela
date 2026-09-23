@@ -17,6 +17,8 @@ export function TiraParticipantes({ participantes, meuId, acoesPara }: TiraParti
                         nome={p.nome}
                         meuId={meuId}
                         compartilhando={p.compartilhando}
+                        cor={p.cor}
+                        chapeu={p.chapeu}
                         acoes={acoesPara?.(p)}
                         tamanhoAvatar={48}
                     />

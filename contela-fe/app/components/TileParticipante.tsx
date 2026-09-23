@@ -1,3 +1,4 @@
+import type { ChapeuEscolha } from '../types/sala';
 import { Avatar } from './Avatar';
 
 export interface AcaoTile {
@@ -11,18 +12,29 @@ interface TileParticipanteProps {
     nome: string;
     meuId: string | null;
     compartilhando?: boolean;
+    cor?: string | null;
+    chapeu?: ChapeuEscolha | null;
     tamanhoAvatar?: number;
     acoes?: AcaoTile[];
 }
 
-export function TileParticipante({ id, nome, meuId, compartilhando, tamanhoAvatar = 56, acoes = [] }: TileParticipanteProps) {
+export function TileParticipante({
+    id,
+    nome,
+    meuId,
+    compartilhando,
+    cor,
+    chapeu,
+    tamanhoAvatar = 56,
+    acoes = [],
+}: TileParticipanteProps) {
     return (
         <div
             className={`group relative flex aspect-square h-full w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-xl border bg-ink-2 p-2 ${
                 compartilhando ? 'border-signal' : 'border-line'
             }`}
         >
-            <Avatar id={id} nome={nome} tamanho={tamanhoAvatar} compartilhando={compartilhando} />
+            <Avatar id={id} nome={nome} tamanho={tamanhoAvatar} compartilhando={compartilhando} cor={cor} chapeu={chapeu} />
             <span className="max-w-full truncate rounded-md bg-black/40 px-2 py-0.5 text-xs text-paper">
                 {nome}
                 {id === meuId ? ' (você)' : ''}

@@ -12,6 +12,10 @@ export default function Home() {
     setSalaId,
     senha,
     setSenha,
+    cor,
+    setCor,
+    chapeu,
+    setChapeu,
     conectado,
     entrando,
     servidor,
@@ -53,6 +57,8 @@ export default function Home() {
             nome={nome}
             salaId={salaId}
             senha={senha}
+            cor={cor}
+            chapeu={chapeu}
             erro={erro}
             entrando={entrando}
             servidor={servidor}
@@ -60,6 +66,8 @@ export default function Home() {
             onNomeChange={setNome}
             onSalaIdChange={setSalaId}
             onSenhaChange={setSenha}
+            onCorChange={setCor}
+            onChapeuChange={setChapeu}
             onEntrar={handleEntrar}
             onCriar={handleCriar}
         />

@@ -59,7 +59,7 @@ export function VideoStage({
                     />
                     <span
                         className="absolute bottom-3 left-3 rounded-md px-2.5 py-1 text-xs font-medium text-ink"
-                        style={{ backgroundColor: corAvatar(sharer.id) }}
+                        style={{ backgroundColor: sharer.cor || corAvatar(sharer.id) }}
                     >
                         {sharer.nome}
                         {souEuQueCompartilho ? ' (você)' : ''}

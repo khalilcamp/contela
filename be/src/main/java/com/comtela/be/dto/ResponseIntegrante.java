@@ -12,4 +12,6 @@ public class ResponseIntegrante {
     private String id;
     private String nome;
     private boolean compartilhando;
+    private String cor;
+    private String chapeu;
 }

@@ -24,7 +24,7 @@ export function ListaParticipantes({ participantes, meuId, donoId, acoesPara }: 
                     const acoes = acoesPara?.(p) ?? [];
                     return (
                         <li key={p.id} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-ink-3/60">
-                            <Avatar id={p.id} nome={p.nome} tamanho={30} compartilhando={p.compartilhando} />
+                            <Avatar id={p.id} nome={p.nome} tamanho={30} compartilhando={p.compartilhando} cor={p.cor} chapeu={p.chapeu} />
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-sm text-paper">
                                     {p.nome}

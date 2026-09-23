@@ -52,7 +52,8 @@ public class SalaController {
         String integranteId = headerAccessor.getUser().getName();
         ResponseSala salaResponse = salaService.entrar(
                 salaId, integranteId, headerAccessor.getSessionId(),
-                request.getNome(), request.getSenha(), request.getTokenDono());
+                request.getNome(), request.getSenha(), request.getTokenDono(),
+                request.getCor(), request.getChapeu());
 
         sessao.put("salaId", salaResponse.getSalaId());
         if (VersaoApp.valida(request.getVersaoApp())) {

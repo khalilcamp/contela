@@ -78,3 +78,13 @@ O Release inclui também `latest.yml` e o `.blockmap`: é com eles que o app ins
 Opcionalmente, crie também a variável `WEB_URL` (o endereço da versão web, quando existir). Com ela, o app de desktop copia um link web no convite, em vez de só o link `contela://`.
 
 Uma vez, nas configurações do repositório (Settings > Secrets and variables > Actions > Variables), crie a variável `WS_URL` com o endereço do backend, por exemplo `https://seu-backend.onrender.com/wsock`. É ela que o build embute no app. Depois de publicar, defina `APP_VERSAO_ATUAL` no backend para avisar quem está em versões antigas.
+
+## Assinatura de código
+
+Os instaladores do Windows do Contela são assinados digitalmente com um certificado doado pela [SignPath Foundation](https://signpath.org/), que oferece assinatura de código gratuita para projetos open source. Isso é o que garante que o Windows reconheça o instalador como vindo de uma fonte confiável, em vez de bloqueá-lo por falta de reputação.
+
+Certificado por: [SignPath Foundation](https://signpath.org/) — [Termos e Política de Privacidade](https://signpath.org/privacy-policy).
+
+## Licença
+
+[MIT](LICENSE).

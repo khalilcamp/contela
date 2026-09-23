@@ -72,6 +72,8 @@ export interface DadosEntrada {
     nome: string;
     senha: string;
     tokenDono: string | null;
+    cor: string | null;
+    chapeu: string | null;
 }
 
 export interface EventosSala {
@@ -114,6 +116,8 @@ export function entrarNaSala(client: Client, salaId: string, dados: DadosEntrada
                 tokenDono: dados.tokenDono,
                 versaoApp: VERSAO_APP,
                 plataforma: plataformaAtual(),
+                cor: dados.cor,
+                chapeu: dados.chapeu,
             }),
         });
     }, 150);

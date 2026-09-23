@@ -3,12 +3,17 @@
 import { useState } from 'react';
 import { gerarSenha } from '../lib/senha';
 import type { EstadoServidor } from '../lib/servidor';
+import { CHAPEUS_ESCOLHA, CORES_ESCOLHA } from '../lib/avatar';
+import type { ChapeuEscolha } from '../types/sala';
 import { IconCopiar, IconSala, IconUsuario } from './icons';
+import { Mascote } from './Mascote';
 
 interface FormularioSalaProps {
     nome: string;
     salaId: string;
     senha: string;
+    cor: string;
+    chapeu: ChapeuEscolha;
     erro: string | null;
     entrando: boolean;
     servidor: EstadoServidor;
@@ -16,6 +21,8 @@ interface FormularioSalaProps {
     onNomeChange: (valor: string) => void;
     onSalaIdChange: (valor: string) => void;
     onSenhaChange: (valor: string) => void;
+    onCorChange: (valor: string) => void;
+    onChapeuChange: (valor: ChapeuEscolha) => void;
     onEntrar: () => void;
     onCriar: () => void;
 }
@@ -29,6 +36,8 @@ export default function FormularioSala({
     nome,
     salaId,
     senha,
+    cor,
+    chapeu,
     erro,
     entrando,
     servidor,
@@ -36,6 +45,8 @@ export default function FormularioSala({
     onNomeChange,
     onSalaIdChange,
     onSenhaChange,
+    onCorChange,
+    onChapeuChange,
     onEntrar,
     onCriar,
 }: FormularioSalaProps) {
@@ -115,6 +126,50 @@ export default function FormularioSala({
                             value={nome}
                             onChange={(e) => onNomeChange(e.target.value)}
                         />
+                    </div>
+                </div>
+
+                <div>
+                    <label className="mb-1.5 block text-sm font-medium text-paper">Aparência</label>
+                    <div className="flex items-center gap-4 rounded-lg border border-line bg-ink p-3">
+                        <div className="h-14 w-14 shrink-0">
+                            <Mascote acento={cor} chapeu={chapeu} estagioVisual={1} flutuar={false} className="h-full w-full" />
+                        </div>
+                        <div className="flex flex-1 flex-col gap-2.5">
+                            <div className="flex gap-1.5">
+                                {CORES_ESCOLHA.map((opcao) => (
+                                    <button
+                                        key={opcao}
+                                        type="button"
+                                        onClick={() => onCorChange(opcao)}
+                                        aria-label={`Cor ${opcao}`}
+                                        aria-pressed={cor === opcao}
+                                        className={`h-6 w-6 shrink-0 rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
+                                            cor === opcao ? 'ring-2 ring-paper ring-offset-2 ring-offset-ink' : 'opacity-70 hover:opacity-100'
+                                        }`}
+                                        style={{ backgroundColor: opcao }}
+                                    />
+                                ))}
+                            </div>
+                            <div className="flex gap-1.5">
+                                {CHAPEUS_ESCOLHA.map((opcao) => (
+                                    <button
+                                        key={opcao.valor}
+                                        type="button"
+                                        onClick={() => onChapeuChange(opcao.valor)}
+                                        aria-pressed={chapeu === opcao.valor}
+                                        title={opcao.rotulo}
+                                        className={`rounded-md px-2 py-1 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
+                                            chapeu === opcao.valor
+                                                ? 'bg-signal text-signal-ink'
+                                                : 'bg-ink-3 text-mute hover:text-paper'
+                                        }`}
+                                    >
+                                        {opcao.rotulo}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
 

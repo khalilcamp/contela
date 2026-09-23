@@ -35,6 +35,9 @@ public class SalaService {
     private static final int TAMANHO_MAXIMO_MENSAGEM = 2000;
     private static final int TAMANHO_MAXIMO_URL_GIF = 500;
     private static final Set<String> HOSTS_GIF_PERMITIDOS = Set.of("giphy.com");
+    private static final Set<String> CORES_PERMITIDAS =
+            Set.of("#f97316", "#3b82f6", "#22c55e", "#ec4899", "#a855f7", "#2dd4bf");
+    private static final Set<String> CHAPEUS_PERMITIDOS = Set.of("nenhum", "festa", "bone");
     private static final int TAMANHO_MAXIMO_NOME = 24;
     private static final int TAMANHO_MINIMO_SENHA = 4;
     private static final int TAMANHO_MAXIMO_SENHA = 64;
@@ -90,8 +93,16 @@ public class SalaService {
 
     public ResponseSala entrar(String salaId, String integranteId, String sessaoId,
                                String nomeBruto, String senha, String tokenDono) {
+        return entrar(salaId, integranteId, sessaoId, nomeBruto, senha, tokenDono, null, null);
+    }
+
+    public ResponseSala entrar(String salaId, String integranteId, String sessaoId,
+                               String nomeBruto, String senha, String tokenDono,
+                               String cor, String chapeu) {
         Sala sala = buscar(salaId);
         String nome = validarNome(nomeBruto);
+        String corValida = validarCor(cor);
+        String chapeuValido = validarChapeu(chapeu);
 
         if (sala.temSenha()) {
             conferirSenha(sala, sessaoId, senha);
@@ -111,13 +122,29 @@ public class SalaService {
             }
 
             sala.getParticipantes().put(integranteId,
-                    new Integrante(integranteId, sala.getIdSala(), nome, false, Instant.now()));
+                    new Integrante(integranteId, sala.getIdSala(), nome, false, Instant.now(), corValida, chapeuValido));
 
             if (sala.getDonoId() == null && tokenConfere(sala, tokenDono)) {
                 sala.setDonoId(integranteId);
             }
             return montarSalaResponse(sala);
         }
+    }
+
+    private String validarCor(String cor) {
+        if (cor == null) return null;
+        if (!CORES_PERMITIDAS.contains(cor)) {
+            throw new IllegalArgumentException("Cor inválida.");
+        }
+        return cor;
+    }
+
+    private String validarChapeu(String chapeu) {
+        if (chapeu == null) return null;
+        if (!CHAPEUS_PERMITIDOS.contains(chapeu)) {
+            throw new IllegalArgumentException("Chapéu inválido.");
+        }
+        return chapeu;
     }
 
     public ResponseSala sair(String salaId, String integranteId) {
@@ -383,7 +410,7 @@ public class SalaService {
     private ResponseSala montarSalaResponse(Sala sala) {
         List<ResponseIntegrante> participantes = sala.getParticipantes().values().stream()
                 .sorted(Comparator.comparing(Integrante::getEntrouEm))
-                .map(i -> new ResponseIntegrante(i.getId(), i.getNome(), i.isCompartilhandoTela()))
+                .map(i -> new ResponseIntegrante(i.getId(), i.getNome(), i.isCompartilhandoTela(), i.getCor(), i.getChapeu()))
                 .collect(Collectors.toList());
 
         return new ResponseSala(sala.getIdSala(), participantes, sala.getDonoId());

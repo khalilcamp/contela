@@ -16,9 +16,17 @@ import {
 } from '../lib/websocket';
 import { DiagnosticoPeer } from '../lib/diagnostico';
 import { ERRO_SEM_AUDIO, GerenciadorWebRTC } from '../lib/webrtc';
-import { SalaResponse, MensagemResponse, SinalWebRTC } from '../types/sala';
+import { SalaResponse, MensagemResponse, SinalWebRTC, ChapeuEscolha } from '../types/sala';
 import { EstadoServidor, estadoDoServidor, garantirServidor, observarServidor } from '../lib/servidor';
 import { OpcoesCompartilhamento } from '../types/compartilhamento';
+import { CORES_ESCOLHA, CHAPEUS_ESCOLHA } from '../lib/avatar';
+
+const CHAVE_COR = 'contela:cor';
+const CHAVE_CHAPEU = 'contela:chapeu';
+
+function corPadraoAleatoria(): string {
+    return CORES_ESCOLHA[Math.floor(Math.random() * CORES_ESCOLHA.length)];
+}
 
 export interface PreviaTransmissao {
     stream: MediaStream;
@@ -47,6 +55,8 @@ export function useSalaConexao() {
     const [nome, setNome] = useState('');
     const [salaId, setSalaId] = useState('');
     const [senha, setSenha] = useState('');
+    const [cor, setCor] = useState(CORES_ESCOLHA[0]);
+    const [chapeu, setChapeu] = useState<ChapeuEscolha>('nenhum');
     const [conectado, setConectado] = useState(false);
     const [entrando, setEntrando] = useState(false);
     const [servidor, setServidor] = useState<EstadoServidor>(estadoDoServidor);
@@ -98,14 +108,36 @@ export function useSalaConexao() {
 
     useEffect(() => {
         const daUrl = new URLSearchParams(window.location.search).get('sala');
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- le a URL so no cliente (evita hydration mismatch)
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- le a URL e o localStorage so no cliente (evita hydration mismatch)
         if (daUrl) setSalaId(daUrl);
+
+        try {
+            const corSalva = window.localStorage.getItem(CHAVE_COR);
+            setCor(corSalva && CORES_ESCOLHA.includes(corSalva) ? corSalva : corPadraoAleatoria());
+
+            const chapeuSalvo = window.localStorage.getItem(CHAVE_CHAPEU) as ChapeuEscolha | null;
+            if (chapeuSalvo && CHAPEUS_ESCOLHA.some((c) => c.valor === chapeuSalvo)) {
+                setChapeu(chapeuSalvo);
+            }
+        } catch {}
 
         const desktop = window.contela;
         if (!desktop) return;
         desktop.salaInicial().then((id) => id && setSalaId(id));
         return desktop.aoReceberSala(setSalaId);
     }, []);
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(CHAVE_COR, cor);
+        } catch {}
+    }, [cor]);
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(CHAVE_CHAPEU, chapeu);
+        } catch {}
+    }, [chapeu]);
 
     useEffect(() => {
         return () => {
@@ -182,7 +214,7 @@ export function useSalaConexao() {
         if (clientRef.current !== client) return;
 
         client.onConnect = () => {
-            entrarNaSala(client, salaAlvo, { nome, senha, tokenDono }, {
+            entrarNaSala(client, salaAlvo, { nome, senha, tokenDono, cor, chapeu }, {
                 onConfirmacao: ({ meuId: idRecebido, salaId: salaConfirmada }) => {
                     if (temporizadorEntradaRef.current) clearTimeout(temporizadorEntradaRef.current);
                     entradoRef.current = true;
@@ -427,6 +459,10 @@ export function useSalaConexao() {
         setSalaId,
         senha,
         setSenha,
+        cor,
+        setCor,
+        chapeu,
+        setChapeu,
         conectado,
         entrando,
         servidor,

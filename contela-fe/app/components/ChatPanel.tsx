@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MensagemResponse } from '../types/sala';
+import { Integrante, MensagemResponse } from '../types/sala';
 import { Avatar } from './Avatar';
 import { IconGif, IconSend, IconSino, IconSinoOff } from './icons';
 import { SeletorGif } from './SeletorGif';
@@ -14,6 +14,7 @@ interface ChatPanelProps {
     meuId: string | null;
     notificacoes: boolean;
     onAlternarNotificacoes: () => void;
+    participantesPorId: Map<string, Integrante>;
 }
 
 function formatarHora(iso: string): string {
@@ -29,6 +30,7 @@ export function ChatPanel({
     meuId,
     notificacoes,
     onAlternarNotificacoes,
+    participantesPorId,
 }: ChatPanelProps) {
     const [seletorGifAberto, setSeletorGifAberto] = useState(false);
 
@@ -55,11 +57,14 @@ export function ChatPanel({
                 {mensagens.map((m, i) => {
                     const anterior = mensagens[i - 1];
                     const mesmoAutor = anterior?.integranteId === m.integranteId;
+                    const autor = participantesPorId.get(m.integranteId);
 
                     return (
                         <div key={m.id} className={`flex gap-2.5 ${mesmoAutor ? 'mt-0.5' : 'mt-3'}`}>
                             <div className="w-7 shrink-0">
-                                {!mesmoAutor && <Avatar id={m.integranteId} nome={m.nomeIntegrante} tamanho={28} />}
+                                {!mesmoAutor && (
+                                    <Avatar id={m.integranteId} nome={m.nomeIntegrante} tamanho={28} cor={autor?.cor} chapeu={autor?.chapeu} />
+                                )}
                             </div>
 
                             <div className="min-w-0 flex-1">
@@ -69,6 +74,7 @@ export function ChatPanel({
                                             className={`truncate text-sm font-semibold ${
                                                 m.integranteId === meuId ? 'text-signal' : 'text-paper'
                                             }`}
+                                            style={m.integranteId !== meuId && autor?.cor ? { color: autor.cor } : undefined}
                                         >
                                             {m.nomeIntegrante}
                                         </span>

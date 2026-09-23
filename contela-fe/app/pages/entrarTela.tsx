@@ -6,11 +6,14 @@ import FormularioSala from '../components/formularioSala';
 import { IconEscudo } from '../components/icons';
 import { MosaicoTelas } from '../components/MosaicoTelas';
 import { PromoLinkpet } from '../components/PromoLinkpet';
+import type { ChapeuEscolha } from '../types/sala';
 
 interface EntrarTelaProps {
     nome: string;
     salaId: string;
     senha: string;
+    cor: string;
+    chapeu: ChapeuEscolha;
     erro: string | null;
     entrando: boolean;
     servidor: EstadoServidor;
@@ -18,6 +21,8 @@ interface EntrarTelaProps {
     onNomeChange: (valor: string) => void;
     onSalaIdChange: (valor: string) => void;
     onSenhaChange: (valor: string) => void;
+    onCorChange: (valor: string) => void;
+    onChapeuChange: (valor: ChapeuEscolha) => void;
     onEntrar: () => void;
     onCriar: () => void;
 }
@@ -26,6 +31,8 @@ export default function EntrarTela({
     nome,
     salaId,
     senha,
+    cor,
+    chapeu,
     erro,
     entrando,
     servidor,
@@ -33,6 +40,8 @@ export default function EntrarTela({
     onNomeChange,
     onSalaIdChange,
     onSenhaChange,
+    onCorChange,
+    onChapeuChange,
     onEntrar,
     onCriar,
 }: EntrarTelaProps) {
@@ -75,6 +84,8 @@ export default function EntrarTela({
                         nome={nome}
                         salaId={salaId}
                         senha={senha}
+                        cor={cor}
+                        chapeu={chapeu}
                         erro={erro}
                         entrando={entrando}
                         servidor={servidor}
@@ -82,6 +93,8 @@ export default function EntrarTela({
                         onNomeChange={onNomeChange}
                         onSalaIdChange={onSalaIdChange}
                         onSenhaChange={onSenhaChange}
+                        onCorChange={onCorChange}
+                        onChapeuChange={onChapeuChange}
                         onEntrar={onEntrar}
                         onCriar={onCriar}
                     />

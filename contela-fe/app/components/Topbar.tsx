@@ -127,7 +127,7 @@ export function Topbar({
                         <span className="flex -space-x-2">
                             {participantes.slice(0, 5).map((p) => (
                                 <span key={p.id}>
-                                    <Avatar id={p.id} nome={p.nome} tamanho={28} compartilhando={p.compartilhando} />
+                                    <Avatar id={p.id} nome={p.nome} tamanho={28} compartilhando={p.compartilhando} cor={p.cor} chapeu={p.chapeu} />
                                 </span>
                             ))}
                         </span>

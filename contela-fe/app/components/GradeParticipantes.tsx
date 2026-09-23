@@ -71,6 +71,8 @@ export function GradeParticipantes({ participantes, meuId, acoesPara }: GradePar
                                 id={p.id}
                                 nome={p.nome}
                                 meuId={meuId}
+                                cor={p.cor}
+                                chapeu={p.chapeu}
                                 acoes={acoesPara?.(p)}
                                 tamanhoAvatar={Math.min(160, Math.max(44, layout.lado * 0.5))}
                             />

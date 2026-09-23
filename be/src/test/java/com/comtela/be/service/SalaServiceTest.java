@@ -273,4 +273,20 @@ class SalaServiceTest {
         assertThrows(IllegalArgumentException.class, () -> service.registrarMensagem(
                 sala, "a", "x".repeat(501), TipoMensagem.GIF));
     }
+
+    @Test
+    void entrarAceitaCorEChapeuDaPaletaERecusaValoresForaDela() {
+        String sala = novaSala();
+
+        ResponseSala resposta = service.entrar(sala, "a", "s-a", "Ana", null, null, "#3b82f6", "festa");
+        ResponseIntegrante ana = resposta.getParticipantes().stream()
+                .filter(p -> p.getId().equals("a")).findFirst().orElseThrow();
+        assertEquals("#3b82f6", ana.getCor());
+        assertEquals("festa", ana.getChapeu());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.entrar(sala, "b", "s-b", "Bruno", null, null, "#ff0000", null));
+        assertThrows(IllegalArgumentException.class,
+                () -> service.entrar(sala, "b", "s-b", "Bruno", null, null, null, "coroa"));
+    }
 }

@@ -14,6 +14,10 @@ interface VideoTransmissaoProps {
 }
 
 const CHAVE_VOLUME = 'contela:volume';
+const ESCALA_MINIMA = 1;
+const ESCALA_MAXIMA = 4;
+const PASSO_ESCALA = 0.2;
+const LIMITE_ARRASTO_PX = 4;
 
 function lerVolumeSalvo(): number {
     try {
@@ -36,8 +40,18 @@ export function VideoTransmissao({
 }: VideoTransmissaoProps) {
     const ref = useRef<HTMLVideoElement>(null);
     const recipienteRef = useRef<HTMLDivElement>(null);
+    const arrastoRef = useRef<{ x0: number; y0: number; panX0: number; panY0: number; moveu: boolean } | null>(null);
     const [volume, setVolume] = useState(lerVolumeSalvo);
     const [temVideo, setTemVideo] = useState(true);
+    const [escala, setEscala] = useState(ESCALA_MINIMA);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [streamAnterior, setStreamAnterior] = useState(stream);
+
+    if (stream !== streamAnterior) {
+        setStreamAnterior(stream);
+        setEscala(ESCALA_MINIMA);
+        setPan({ x: 0, y: 0 });
+    }
 
     useEffect(() => {
         if (!stream) return;
@@ -61,6 +75,42 @@ export function VideoTransmissao({
         if (video) video.volume = volume;
     }, [volume]);
 
+    function aoRodarRoda(e: React.WheelEvent) {
+        if (!temVideo) return;
+        e.preventDefault();
+        setEscala((atual) => {
+            const novo = Math.min(ESCALA_MAXIMA, Math.max(ESCALA_MINIMA, atual + (e.deltaY < 0 ? PASSO_ESCALA : -PASSO_ESCALA)));
+            if (novo === ESCALA_MINIMA) setPan({ x: 0, y: 0 });
+            return novo;
+        });
+    }
+
+    function aoPressionarPonteiro(e: React.PointerEvent) {
+        if (!temVideo || escala <= ESCALA_MINIMA) return;
+        arrastoRef.current = { x0: e.clientX, y0: e.clientY, panX0: pan.x, panY0: pan.y, moveu: false };
+        e.currentTarget.setPointerCapture(e.pointerId);
+    }
+
+    function aoMoverPonteiro(e: React.PointerEvent) {
+        const inicio = arrastoRef.current;
+        if (!inicio) return;
+        const dx = e.clientX - inicio.x0;
+        const dy = e.clientY - inicio.y0;
+        if (Math.abs(dx) > LIMITE_ARRASTO_PX || Math.abs(dy) > LIMITE_ARRASTO_PX) inicio.moveu = true;
+        if (inicio.moveu) {
+            setPan({ x: inicio.panX0 + dx / escala, y: inicio.panY0 + dy / escala });
+        }
+    }
+
+    function aoSoltarPonteiro() {
+        arrastoRef.current = null;
+    }
+
+    function redefinirZoom() {
+        setEscala(ESCALA_MINIMA);
+        setPan({ x: 0, y: 0 });
+    }
+
     function alterarVolume(novo: number) {
         setVolume(novo);
         onSilenciadoChange(novo === 0);
@@ -79,9 +129,33 @@ export function VideoTransmissao({
     const semSom = mudo || silenciado || volume === 0;
 
     return (
-        <div ref={recipienteRef} className="group relative h-full w-full bg-black">
-            <video ref={ref} autoPlay muted={mudo || silenciado} playsInline className={temVideo ? className : 'hidden'} />
+        <div ref={recipienteRef} className="group relative h-full w-full overflow-hidden bg-black">
+            <div
+                className="h-full w-full"
+                style={{
+                    transform: `scale(${escala}) translate(${pan.x}px, ${pan.y}px)`,
+                    transformOrigin: 'center center',
+                    cursor: escala > ESCALA_MINIMA ? 'grab' : undefined,
+                }}
+                onWheel={aoRodarRoda}
+                onPointerDown={aoPressionarPonteiro}
+                onPointerMove={aoMoverPonteiro}
+                onPointerUp={aoSoltarPonteiro}
+                onDoubleClick={redefinirZoom}
+            >
+                <video ref={ref} autoPlay muted={mudo || silenciado} playsInline className={temVideo ? className : 'hidden'} />
+            </div>
+
             {stream && !temVideo && <SomenteAudio />}
+
+            {escala > ESCALA_MINIMA && (
+                <button
+                    onClick={redefinirZoom}
+                    className="absolute left-3 top-3 rounded-md bg-black/70 px-2.5 py-1 text-xs font-medium text-paper backdrop-blur-sm transition hover:bg-black/90 focus-visible:outline-2 focus-visible:outline-signal"
+                >
+                    Redefinir zoom
+                </button>
+            )}
 
             {controles && (
                 <div className="absolute bottom-3 right-3 flex items-center gap-2 rounded-lg bg-black/70 px-2.5 py-1.5 text-paper opacity-0 backdrop-blur-sm transition focus-within:opacity-100 group-hover:opacity-100">

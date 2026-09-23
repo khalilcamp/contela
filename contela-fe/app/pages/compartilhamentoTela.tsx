@@ -109,6 +109,7 @@ export default function CompartilhamentoTela({
     });
     const participantes = sala?.participantes ?? [];
     const outroCompartilhando = participantes.some((p) => p.compartilhando && p.id !== meuId);
+    const participantesPorId = new Map(participantes.map((p) => [p.id, p]));
 
     const acoesPara = souDono
         ? (p: Integrante) =>
@@ -179,6 +180,7 @@ export default function CompartilhamentoTela({
                         meuId={meuId}
                         notificacoes={notificacoes}
                         onAlternarNotificacoes={alternarNotificacoes}
+                        participantesPorId={participantesPorId}
                     />
                 )}
             </div>

@@ -14,4 +14,6 @@ public class RequestEntrarSala {
     private String tokenDono;
     private String versaoApp;
     private String plataforma;
+    private String cor;
+    private String chapeu;
 }

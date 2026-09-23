@@ -16,4 +16,6 @@ public class Integrante {
     private String nome;
     private boolean compartilhandoTela;
     private Instant entrouEm;
+    private String cor;
+    private String chapeu;
 }
