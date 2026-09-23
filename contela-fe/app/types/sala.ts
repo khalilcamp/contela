@@ -10,11 +10,14 @@ export interface SalaResponse {
     donoId: string | null;
 }
 
+export type TipoMensagem = 'TEXTO' | 'GIF';
+
 export interface MensagemResponse {
     id: string;
     integranteId: string;
     nomeIntegrante: string;
     texto: string;
+    tipo: TipoMensagem;
     enviadaEm: string;
 }
 

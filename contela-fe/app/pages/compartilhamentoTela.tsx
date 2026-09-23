@@ -11,6 +11,7 @@ import { DialogoAtalhos } from '../components/DialogoAtalhos';
 import { DialogoPrevia } from '../components/DialogoPrevia';
 import { useAtalhos } from '../hooks/useAtalhos';
 import { useNotificacoesChat } from '../hooks/useNotificacoesChat';
+import { useSonsSala } from '../hooks/useSonsSala';
 import { DrawerCompartilhamento } from '../components/DrawerCompartilhamento';
 import type { PreviaTransmissao } from '../hooks/useSalaConexao';
 import { Topbar } from '../components/Topbar';
@@ -37,6 +38,7 @@ interface CompartilhamentoTelaProps {
     texto: string;
     onTextoChange: (valor: string) => void;
     onEnviarMensagem: () => void;
+    onEnviarGif: (url: string) => void;
     previa: PreviaTransmissao | null;
     onCompartilhar: (opcoes: OpcoesCompartilhamento, fonteId: string | null, nomeFonte: string | null) => void;
     onConfirmarTransmissao: () => void;
@@ -68,6 +70,7 @@ export default function CompartilhamentoTela({
     texto,
     onTextoChange,
     onEnviarMensagem,
+    onEnviarGif,
     previa,
     onCompartilhar,
     onConfirmarTransmissao,
@@ -92,6 +95,8 @@ export default function CompartilhamentoTela({
             if (!chatAberto) onToggleChat();
         },
     });
+
+    const { sonsAtivos, alternarSons } = useSonsSala({ participantes: sala?.participantes ?? [], meuId });
 
     const { globais, alterarGlobais, falhas } = useAtalhos((acao) => {
         if (acao === 'silenciar') setSilenciado((atual) => !atual);
@@ -129,6 +134,8 @@ export default function CompartilhamentoTela({
                 naoLidas={naoLidas}
                 onToggleChat={onToggleChat}
                 onAbrirAtalhos={() => setAtalhosAbertos(true)}
+                sonsAtivos={sonsAtivos}
+                onAlternarSons={alternarSons}
                 onSair={onSair}
             />
 
@@ -168,6 +175,7 @@ export default function CompartilhamentoTela({
                         texto={texto}
                         onTextoChange={onTextoChange}
                         onEnviar={onEnviarMensagem}
+                        onEnviarGif={onEnviarGif}
                         meuId={meuId}
                         notificacoes={notificacoes}
                         onAlternarNotificacoes={alternarNotificacoes}

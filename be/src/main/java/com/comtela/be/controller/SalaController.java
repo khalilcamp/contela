@@ -101,7 +101,8 @@ public class SalaController {
                                  SimpMessageHeaderAccessor headerAccessor) {
 
         String integranteId = headerAccessor.getUser().getName();
-        return salaService.registrarMensagem(salaId, integranteId, request.getTexto());
+        TipoMensagem tipo = request.getTipo() != null ? request.getTipo() : TipoMensagem.TEXTO;
+        return salaService.registrarMensagem(salaId, integranteId, request.getTexto(), tipo);
     }
 
     @MessageMapping("/sala/{salaId}/compartilhar")

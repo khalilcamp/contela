@@ -15,6 +15,7 @@ public class ResponseMensagem {
     private String integranteId;
     private String nomeIntegrante;
     private String texto;
+    private TipoMensagem tipo;
     private Instant enviadaEm;
 
 }

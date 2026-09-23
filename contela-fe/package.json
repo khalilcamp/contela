@@ -2,6 +2,7 @@
   "name": "contela-fe",
   "version": "0.1.4",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

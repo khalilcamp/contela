@@ -1,7 +1,9 @@
 package com.comtela.be.service;
 
 import com.comtela.be.dto.ResponseIntegrante;
+import com.comtela.be.dto.ResponseMensagem;
 import com.comtela.be.dto.ResponseSala;
+import com.comtela.be.dto.TipoMensagem;
 import com.comtela.be.seguranca.LimitadorTaxa;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -253,5 +255,22 @@ class SalaServiceTest {
             assertNotNull(service.registrarMensagem(sala, "a", "mensagem " + i));
         }
         assertThrows(IllegalStateException.class, () -> service.registrarMensagem(sala, "a", "mensagem 9"));
+    }
+
+    @Test
+    void chatAceitaGifDoGiphyERecusaLinksDeOutrosDominios() {
+        String sala = novaSala();
+        entrar(sala, "a", "Ana");
+
+        ResponseMensagem gif = service.registrarMensagem(
+                sala, "a", "https://media.giphy.com/media/abc123/giphy.gif", TipoMensagem.GIF);
+        assertEquals(TipoMensagem.GIF, gif.getTipo());
+
+        assertThrows(IllegalArgumentException.class, () -> service.registrarMensagem(
+                sala, "a", "https://evil.example.com/tracker.gif", TipoMensagem.GIF));
+        assertThrows(IllegalArgumentException.class, () -> service.registrarMensagem(
+                sala, "a", "http://media.giphy.com/abc.gif", TipoMensagem.GIF));
+        assertThrows(IllegalArgumentException.class, () -> service.registrarMensagem(
+                sala, "a", "x".repeat(501), TipoMensagem.GIF));
     }
 }

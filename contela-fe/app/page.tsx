@@ -37,6 +37,7 @@ export default function Home() {
     handleCriar,
     handleSair,
     handleEnviarMensagem,
+    handleEnviarGif,
     previa,
     handleCompartilhar,
     handleConfirmarTransmissao,
@@ -85,6 +86,7 @@ export default function Home() {
           texto={texto}
           onTextoChange={setTexto}
           onEnviarMensagem={handleEnviarMensagem}
+          onEnviarGif={handleEnviarGif}
           previa={previa}
           onCompartilhar={handleCompartilhar}
           onConfirmarTransmissao={handleConfirmarTransmissao}

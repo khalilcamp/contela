@@ -322,6 +322,11 @@ export function useSalaConexao() {
         setTexto('');
     }
 
+    function handleEnviarGif(url: string) {
+        if (!clientRef.current || !salaIdAtualRef.current) return;
+        enviarMensagem(clientRef.current, salaIdAtualRef.current, url, 'GIF');
+    }
+
     async function handleCompartilhar(opcoes: OpcoesCompartilhamento, fonteId: string | null, nomeFonte: string | null = null) {
         if (!webrtcRef.current || !sala || !clientRef.current || !salaIdAtualRef.current) return;
 
@@ -447,6 +452,7 @@ export function useSalaConexao() {
         handleCriar,
         handleSair,
         handleEnviarMensagem,
+        handleEnviarGif,
         previa,
         handleCompartilhar,
         handleConfirmarTransmissao,

@@ -1,12 +1,16 @@
+import { useState } from 'react';
 import { MensagemResponse } from '../types/sala';
 import { Avatar } from './Avatar';
-import { IconSend, IconSino, IconSinoOff } from './icons';
+import { IconGif, IconSend, IconSino, IconSinoOff } from './icons';
+import { SeletorGif } from './SeletorGif';
+import { giphyDisponivel } from '../lib/giphy';
 
 interface ChatPanelProps {
     mensagens: MensagemResponse[];
     texto: string;
     onTextoChange: (valor: string) => void;
     onEnviar: () => void;
+    onEnviarGif: (url: string) => void;
     meuId: string | null;
     notificacoes: boolean;
     onAlternarNotificacoes: () => void;
@@ -21,10 +25,13 @@ export function ChatPanel({
     texto,
     onTextoChange,
     onEnviar,
+    onEnviarGif,
     meuId,
     notificacoes,
     onAlternarNotificacoes,
 }: ChatPanelProps) {
+    const [seletorGifAberto, setSeletorGifAberto] = useState(false);
+
     return (
         <div className="my-3 mr-3 flex w-72 shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-ink-2/80 backdrop-blur-xl">
             <div className="flex h-12 items-center justify-between border-b border-line pl-4 pr-2 font-display font-semibold text-paper">
@@ -68,14 +75,28 @@ export function ChatPanel({
                                         <span className="shrink-0 text-[11px] text-mute">{formatarHora(m.enviadaEm)}</span>
                                     </div>
                                 )}
-                                <p className="break-words text-sm text-paper/75">{m.texto}</p>
+                                {m.tipo === 'GIF' ? (
+                                    // eslint-disable-next-line @next/next/no-img-element -- GIF externo do Giphy, sem otimizacao do next/image
+                                    <img src={m.texto} alt="GIF" className="mt-0.5 max-h-48 max-w-full rounded-lg" loading="lazy" />
+                                ) : (
+                                    <p className="break-words text-sm text-paper/75">{m.texto}</p>
+                                )}
                             </div>
                         </div>
                     );
                 })}
             </div>
 
-            <div className="border-t border-line p-3">
+            <div className="relative border-t border-line p-3">
+                {seletorGifAberto && (
+                    <SeletorGif
+                        onSelecionar={(url) => {
+                            onEnviarGif(url);
+                            setSeletorGifAberto(false);
+                        }}
+                        onFechar={() => setSeletorGifAberto(false)}
+                    />
+                )}
                 <div className="flex items-center gap-2 rounded-lg border border-line bg-ink py-1.5 pl-3 pr-1.5 focus-within:border-signal">
                     <input
                         value={texto}
@@ -84,6 +105,19 @@ export function ChatPanel({
                         placeholder="Enviar mensagem"
                         className="min-w-0 flex-1 bg-transparent py-1 text-sm text-paper outline-none placeholder:text-mute"
                     />
+                    {giphyDisponivel() && (
+                        <button
+                            onClick={() => setSeletorGifAberto((v) => !v)}
+                            aria-pressed={seletorGifAberto}
+                            aria-label="Enviar GIF"
+                            title="Enviar GIF"
+                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition ${
+                                seletorGifAberto ? 'bg-ink-3 text-signal' : 'text-mute hover:bg-ink-3 hover:text-paper'
+                            }`}
+                        >
+                            <IconGif className="h-4 w-4" />
+                        </button>
+                    )}
                     <button
                         onClick={onEnviar}
                         disabled={!texto.trim()}

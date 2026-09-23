@@ -3,6 +3,7 @@ package com.comtela.be.service;
 import com.comtela.be.dto.ResponseIntegrante;
 import com.comtela.be.dto.ResponseMensagem;
 import com.comtela.be.dto.ResponseSala;
+import com.comtela.be.dto.TipoMensagem;
 import com.comtela.be.ent.Integrante;
 import com.comtela.be.ent.Sala;
 import com.comtela.be.seguranca.LimitadorTaxa;
@@ -10,6 +11,8 @@ import com.comtela.be.seguranca.SenhaSala;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -30,6 +33,8 @@ import java.util.stream.Collectors;
 public class SalaService {
 
     private static final int TAMANHO_MAXIMO_MENSAGEM = 2000;
+    private static final int TAMANHO_MAXIMO_URL_GIF = 500;
+    private static final Set<String> HOSTS_GIF_PERMITIDOS = Set.of("giphy.com");
     private static final int TAMANHO_MAXIMO_NOME = 24;
     private static final int TAMANHO_MINIMO_SENHA = 4;
     private static final int TAMANHO_MAXIMO_SENHA = 64;
@@ -159,6 +164,10 @@ public class SalaService {
     }
 
     public ResponseMensagem registrarMensagem(String salaId, String integranteId, String texto) {
+        return registrarMensagem(salaId, integranteId, texto, TipoMensagem.TEXTO);
+    }
+
+    public ResponseMensagem registrarMensagem(String salaId, String integranteId, String texto, TipoMensagem tipo) {
         Sala sala = exigirSala(salaId);
 
         Integrante autor = sala.getParticipantes().get(integranteId);
@@ -170,7 +179,10 @@ public class SalaService {
             throw new IllegalArgumentException("Mensagem vazia");
         }
 
-        if (texto.length() > TAMANHO_MAXIMO_MENSAGEM) {
+        TipoMensagem tipoFinal = tipo != null ? tipo : TipoMensagem.TEXTO;
+        if (tipoFinal == TipoMensagem.GIF) {
+            validarUrlGif(texto);
+        } else if (texto.length() > TAMANHO_MAXIMO_MENSAGEM) {
             throw new IllegalArgumentException("Mensagem excede o tamanho máximo de " + TAMANHO_MAXIMO_MENSAGEM + " caracteres");
         }
 
@@ -183,8 +195,29 @@ public class SalaService {
                 integranteId,
                 autor.getNome(),
                 texto,
+                tipoFinal,
                 Instant.now()
         );
+    }
+
+    private void validarUrlGif(String url) {
+        if (url.length() > TAMANHO_MAXIMO_URL_GIF) {
+            throw new IllegalArgumentException("Link do GIF é grande demais.");
+        }
+
+        URI uri;
+        try {
+            uri = new URI(url);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Link do GIF inválido.");
+        }
+
+        String host = uri.getHost();
+        boolean hostPermitido = host != null && HOSTS_GIF_PERMITIDOS.stream()
+                .anyMatch(permitido -> host.equals(permitido) || host.endsWith("." + permitido));
+        if (!"https".equals(uri.getScheme()) || !hostPermitido) {
+            throw new IllegalArgumentException("O GIF precisa vir do Giphy.");
+        }
     }
 
     public ResponseSala atualizarCompartilhamento(String salaId, String integranteId, boolean compartilhando) {

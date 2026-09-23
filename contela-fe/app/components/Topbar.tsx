@@ -5,7 +5,7 @@ import { Integrante } from '../types/sala';
 import { Avatar } from './Avatar';
 import { DialogoSeguranca } from './DialogoSeguranca';
 import { textoDoConvite, melhorLink } from '../lib/convite';
-import { IconChat, IconCopiar, IconEscudo, IconLink, IconSair, IconTeclado } from './icons';
+import { IconChat, IconCopiar, IconEscudo, IconLink, IconSair, IconTeclado, IconVolume, IconMudo } from './icons';
 import { ListaParticipantes } from './ListaParticipantes';
 import { AcaoTile } from './TileParticipante';
 
@@ -21,6 +21,8 @@ interface TopbarProps {
     naoLidas: number;
     onToggleChat: () => void;
     onAbrirAtalhos: () => void;
+    sonsAtivos: boolean;
+    onAlternarSons: () => void;
     onSair: () => void;
 }
 
@@ -36,6 +38,8 @@ export function Topbar({
     naoLidas,
     onToggleChat,
     onAbrirAtalhos,
+    sonsAtivos,
+    onAlternarSons,
     onSair,
 }: TopbarProps) {
     const [copiado, setCopiado] = useState(false);
@@ -156,6 +160,18 @@ export function Topbar({
                     className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink-3 text-mute transition hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
                 >
                     <IconTeclado className="h-4 w-4" />
+                </button>
+
+                <button
+                    onClick={onAlternarSons}
+                    aria-pressed={sonsAtivos}
+                    title={sonsAtivos ? 'Sons de entrada/saída ligados' : 'Sons de entrada/saída desligados'}
+                    aria-label="Sons de entrada e saída da sala"
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg bg-ink-3 transition hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
+                        sonsAtivos ? 'text-signal' : 'text-mute'
+                    }`}
+                >
+                    {sonsAtivos ? <IconVolume className="h-4 w-4" /> : <IconMudo className="h-4 w-4" />}
                 </button>
 
                 <button

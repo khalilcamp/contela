@@ -78,12 +78,14 @@ Dá pra hospedar o front e o [backend](../be) separadamente (ex: [Render](https:
 - Defina `NEXT_PUBLIC_WS_URL` (ex: `https://seu-backend.onrender.com/wsock`) na hora do build do front. Sem ela, o front tenta falar com o backend em `localhost:8080`.
 - No backend, `APP_CORS_ALLOWED_ORIGINS` precisa listar a origem do front (e `app://contela` para o app desktop).
 - Para a transmissão funcionar entre redes diferentes, configure um servidor TURN no backend com `APP_ICE_TURN_URLS`, `APP_ICE_TURN_USERNAME` e `APP_ICE_TURN_CREDENTIAL`.
+- (Opcional) Defina `NEXT_PUBLIC_GIPHY_API_KEY` na hora do build pra habilitar o botão de GIF no chat (busca no [Giphy](https://developers.giphy.com/), que tem uma chave "Beta" gratuita liberada na hora). Sem ela, o botão simplesmente não aparece.
 
 ## Privacidade e segurança
 
 - Nada é gravado: vídeo, áudio e mensagens do chat não ficam salvos no servidor. Não há cadastro, e o servidor só conhece o apelido e o código da sala enquanto a pessoa está nela.
 - Cada sala tem um código aleatório e, opcionalmente, uma senha (sugerida por padrão ao criar a sala). O anfitrião pode remover pessoas e encerrar a transmissão de alguém.
 - A hospedagem do servidor e os servidores STUN/TURN enxergam o endereço IP de quem se conecta, e os participantes de uma sala podem ver o IP uns dos outros pela conexão direta.
+- Se o botão de GIF estiver habilitado, a busca e as imagens vêm direto do Giphy: quem usa essa busca troca dados com os servidores deles, e o backend do Contela só permite enviar no chat GIFs hospedados em `giphy.com`.
 - O Contela não é direcionado a crianças e adolescentes. Responsáveis: prefiram salas com senha, criadas por alguém que vocês conheçam.
 - **Denúncias e pedidos de ajuda:** linkpetprofessional@gmail.com. Informe o código da sala, o dia e o horário e o que aconteceu. Em risco imediato, ligue 190 (polícia) ou 192 (SAMU); para violações contra crianças e adolescentes, também há o Disque 100 e a SaferNet Brasil.
 

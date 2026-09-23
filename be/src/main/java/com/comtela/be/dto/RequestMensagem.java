@@ -10,5 +10,6 @@ import lombok.NoArgsConstructor;
 public class RequestMensagem {
 
     private String texto;
+    private TipoMensagem tipo;
 
 }

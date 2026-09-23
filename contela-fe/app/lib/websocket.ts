@@ -1,6 +1,6 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { SalaResponse, MensagemResponse, SinalWebRTC } from '../types/sala';
+import { SalaResponse, MensagemResponse, SinalWebRTC, TipoMensagem } from '../types/sala';
 import { SERVIDORES_ICE_PADRAO } from './ice';
 import { VERSAO_APP, plataformaAtual } from './versao';
 
@@ -119,10 +119,10 @@ export function entrarNaSala(client: Client, salaId: string, dados: DadosEntrada
     }, 150);
 }
 
-export function enviarMensagem(client: Client, salaId: string, texto: string) {
+export function enviarMensagem(client: Client, salaId: string, texto: string, tipo: TipoMensagem = 'TEXTO') {
     client.publish({
         destination: `/app/sala/${salaId}/chat`,
-        body: JSON.stringify({ texto }),
+        body: JSON.stringify({ texto, tipo }),
     });
 }
 

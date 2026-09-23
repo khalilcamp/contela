@@ -168,6 +168,15 @@ export function IconSinoOff({ className }: IconProps) {
     );
 }
 
+export function IconGif({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M7 10v4M11 10v4M11 12h1.5M17 10h-2.5v4M17 12h-2" />
+        </svg>
+    );
+}
+
 export function IconLink({ className }: IconProps) {
     return (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
