@@ -289,4 +289,21 @@ class SalaServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> service.entrar(sala, "b", "s-b", "Bruno", null, null, null, "coroa"));
     }
+
+    @Test
+    void pessoasOnlineContaTodosOsParticipantesDeTodasAsSalas() {
+        assertEquals(0, service.pessoasOnline());
+
+        String sala1 = novaSala();
+        entrar(sala1, "a", "Ana");
+        entrar(sala1, "b", "Bruno");
+
+        String sala2 = novaSala();
+        entrar(sala2, "c", "Carla");
+
+        assertEquals(3, service.pessoasOnline());
+
+        service.sair(sala1, "a");
+        assertEquals(2, service.pessoasOnline());
+    }
 }

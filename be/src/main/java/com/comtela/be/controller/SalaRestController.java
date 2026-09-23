@@ -2,14 +2,17 @@ package com.comtela.be.controller;
 
 import com.comtela.be.dto.RequestCriarSala;
 import com.comtela.be.dto.ResponseErro;
+import com.comtela.be.dto.ResponseEstatisticas;
 import com.comtela.be.dto.ResponseSalaCriada;
 import com.comtela.be.seguranca.LimitadorTaxa;
 import com.comtela.be.service.SalaService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +27,13 @@ public class SalaRestController {
 
     private final SalaService salaService;
     private final LimitadorTaxa limitador;
+
+    @GetMapping
+    public ResponseEntity<ResponseEstatisticas> estatisticas() {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(new ResponseEstatisticas(salaService.pessoasOnline()));
+    }
 
     @PostMapping
     public ResponseEntity<ResponseSalaCriada> criar(@RequestBody(required = false) RequestCriarSala request,

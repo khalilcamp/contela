@@ -5,6 +5,7 @@ import { DialogoSeguranca } from '../components/DialogoSeguranca';
 import FormularioSala from '../components/formularioSala';
 import { IconEscudo } from '../components/icons';
 import { MosaicoTelas } from '../components/MosaicoTelas';
+import { PillPessoasOnline } from '../components/PillPessoasOnline';
 import { PromoLinkpet } from '../components/PromoLinkpet';
 import type { ChapeuEscolha } from '../types/sala';
 
@@ -64,7 +65,10 @@ export default function EntrarTela({
             }}
         >
             <div className="hidden flex-col justify-between border-r border-line px-16 py-16 lg:flex">
-                <p className="font-display text-2xl font-semibold tracking-tight">Contela</p>
+                <div className="flex flex-col items-start gap-3">
+                    <p className="font-display text-2xl font-semibold tracking-tight">Contela</p>
+                    <PillPessoasOnline />
+                </div>
 
                 <div className="flex flex-col items-start gap-8">
                     <MosaicoTelas />
@@ -77,7 +81,10 @@ export default function EntrarTela({
             </div>
 
             <div className="flex flex-col justify-center px-6 py-16 sm:px-12 lg:px-20">
-                <p className="mb-10 font-display text-2xl font-semibold tracking-tight lg:hidden">Contela</p>
+                <div className="mb-10 flex flex-col items-start gap-3 lg:hidden">
+                    <p className="font-display text-2xl font-semibold tracking-tight">Contela</p>
+                    <PillPessoasOnline />
+                </div>
 
                 <div className="w-full max-w-sm">
                     <FormularioSala

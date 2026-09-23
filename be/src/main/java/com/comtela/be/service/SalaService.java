@@ -181,6 +181,10 @@ public class SalaService {
         }
     }
 
+    public int pessoasOnline() {
+        return salas.values().stream().mapToInt(s -> s.getParticipantes().size()).sum();
+    }
+
     public boolean pertence(String salaId, String integranteId) {
         Sala sala = salas.get(salaId);
         return sala != null && integranteId != null && sala.getParticipantes().containsKey(integranteId);
