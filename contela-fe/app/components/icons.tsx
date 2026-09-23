@@ -177,6 +177,27 @@ export function IconGif({ className }: IconProps) {
     );
 }
 
+export function IconGirar({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M4 12a8 8 0 0 1 14.4-4.8" />
+            <path d="M18.4 3v4.4h-4.4" />
+            <path d="M20 12a8 8 0 0 1-14.4 4.8" />
+            <path d="M5.6 21v-4.4H10" />
+        </svg>
+    );
+}
+
+export function IconEspelhar({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M12 3v18" strokeDasharray="2 2" />
+            <path d="M7 7 4 12l3 5" />
+            <path d="M17 7l3 5-3 5" />
+        </svg>
+    );
+}
+
 export function IconLink({ className }: IconProps) {
     return (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>

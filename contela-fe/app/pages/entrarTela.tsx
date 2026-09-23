@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { linkDoApp, salaIdValido } from '../lib/convite';
 import type { EstadoServidor } from '../lib/servidor';
+import { BaixarApp } from '../components/BaixarApp';
 import { DialogoSeguranca } from '../components/DialogoSeguranca';
 import FormularioSala from '../components/formularioSala';
 import { IconEscudo } from '../components/icons';
@@ -77,7 +78,10 @@ export default function EntrarTela({
                     </p>
                 </div>
 
-                <PromoLinkpet />
+                <div className="flex flex-row flex-wrap items-start gap-3">
+                    {noNavegador && <BaixarApp />}
+                    <PromoLinkpet />
+                </div>
             </div>
 
             <div className="flex flex-col justify-center px-6 py-16 sm:px-12 lg:px-20">
@@ -126,6 +130,7 @@ export default function EntrarTela({
                     </button>
                 </div>
 
+                {noNavegador && <BaixarApp className="mt-8 lg:hidden" />}
                 <PromoLinkpet className="mt-8 lg:hidden" />
             </div>
 
