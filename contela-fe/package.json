@@ -11,6 +11,7 @@
     "electron:dev": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:static": "cross-env ELECTRON=1 next build && electron . --static",
     "electron:build": "cross-env ELECTRON=1 next build && electron-builder",
+    "build:web": "cross-env NEXT_OUTPUT_EXPORT=1 next build",
     "test:integracao": "node tests/integracao/executar.cjs"
   },
   "dependencies": {

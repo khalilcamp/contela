@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
     .split(",")
     .map((origem) => origem.trim())
     .filter(Boolean),
-  ...(process.env.ELECTRON === "1" && {
+  ...((process.env.ELECTRON === "1" || process.env.NEXT_OUTPUT_EXPORT === "1") && {
     output: "export" as const,
     images: { unoptimized: true },
   }),
