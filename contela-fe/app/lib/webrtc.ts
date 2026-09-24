@@ -91,7 +91,7 @@ export class GerenciadorWebRTC {
         }
 
         this.streamLocal.getVideoTracks().forEach((track) => {
-            track.contentHint = opcoes.fps === 60 ? 'motion' : 'detail';
+            track.contentHint = 'motion';
         });
         if (opcoes.apenasAudio) {
             this.streamLocal.getAudioTracks().forEach((track) => {
@@ -342,6 +342,7 @@ export class GerenciadorWebRTC {
                 const parametros = sender.getParameters();
                 if (!parametros.encodings?.length) parametros.encodings = [{}];
                 parametros.encodings[0].maxBitrate = maxBitrate;
+                parametros.degradationPreference = 'maintain-framerate';
                 await sender.setParameters(parametros);
             } catch (erro) {
                 console.warn('Nao foi possivel limitar o bitrate:', erro);

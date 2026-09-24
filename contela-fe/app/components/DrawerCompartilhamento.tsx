@@ -182,7 +182,7 @@ export function DrawerCompartilhamento({ aberto, onFechar, onIniciar }: DrawerCo
                                 />
                                 <Regua
                                     titulo="Quadros por segundo"
-                                    dica={opcoes.fps === 60 ? 'Mais fluido, bom para jogos e vídeo' : 'Mais nítido, bom para texto e código'}
+                                    dica={opcoes.fps === 60 ? 'Melhor pra jogos e vídeo' : 'Consome menos internet'}
                                     opcoes={TAXAS}
                                     valor={opcoes.fps}
                                     onChange={(fps) => setOpcoes((o) => ({ ...o, fps }))}
