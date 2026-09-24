@@ -9,6 +9,7 @@ import {
 } from '../types/compartilhamento';
 
 import { AudioJanela } from './audioJanela';
+import { forcarBitrateInicial } from './bitrateInicial';
 import { DiagnosticoPeer } from './diagnostico';
 import { SERVIDORES_ICE_PADRAO } from './ice';
 import { pedirOpusEstereo, sdpTemOpusEstereo } from './opus';
@@ -322,8 +323,11 @@ export class GerenciadorWebRTC {
             conexao.addTrack(track, this.streamLocal!);
         });
 
+        if (!this.opcoes.apenasAudio) this.preferirH264(conexao);
+
         const offer = await conexao.createOffer();
         if (this.opcoes.apenasAudio) offer.sdp = pedirOpusEstereo(offer.sdp);
+        else offer.sdp = forcarBitrateInicial(offer.sdp, calcularBitrateMaximo(this.opcoes));
         await conexao.setLocalDescription(offer);
         await this.limitarBitrate(conexao);
 
@@ -332,6 +336,24 @@ export class GerenciadorWebRTC {
             destinatarioId: peerId,
             payload: offer,
         });
+    }
+
+    private preferirH264(conexao: RTCPeerConnection) {
+        if (typeof RTCRtpSender.getCapabilities !== 'function') return;
+        const capacidades = RTCRtpSender.getCapabilities('video');
+        if (!capacidades) return;
+
+        const h264 = capacidades.codecs.filter((codec) => codec.mimeType.toLowerCase() === 'video/h264');
+        if (h264.length === 0) return;
+        const outros = capacidades.codecs.filter((codec) => codec.mimeType.toLowerCase() !== 'video/h264');
+
+        const transceptor = conexao.getTransceivers().find((t) => t.sender.track?.kind === 'video');
+        if (!transceptor || typeof transceptor.setCodecPreferences !== 'function') return;
+        try {
+            transceptor.setCodecPreferences([...h264, ...outros]);
+        } catch (erro) {
+            console.warn('Nao foi possivel preferir H264:', erro);
+        }
     }
 
     private async limitarBitrate(conexao: RTCPeerConnection) {
