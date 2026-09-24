@@ -1,6 +1,6 @@
 /**
  * Reencaminha um MediaStreamTrack de video atraves de um <canvas> escondido,
- * desenhando quadros numa cadencia fixa e propria (via requestAnimationFrame +
+ * desenhando quadros numa cadencia fixa e propria (via setInterval +
  * requestFrame() manual no CanvasCaptureMediaStreamTrack).
  *
  * Existe pra contornar o "Auto-Throttled Screen Capture and Mirroring" do
@@ -9,6 +9,11 @@
  * tela/janela/aba pra conteudo "animado" (video, jogos), sem nenhuma API
  * publica pra desativar. canvas.captureStream() e um caminho de codigo
  * completamente separado da captura nativa, entao nao passa por esse throttle.
+ *
+ * Usa setInterval em vez de requestAnimationFrame de proposito: o rAF pausa
+ * sozinho quando a aba fica em segundo plano (e o compartilhamento precisa
+ * continuar rodando mesmo quando a pessoa troca de janela pra ver o que esta
+ * compartilhando).
  */
 
 interface FaixaComRequestFrame extends MediaStreamTrack {
@@ -20,7 +25,7 @@ export class RepasseCanvas {
     private readonly canvas: HTMLCanvasElement;
     private readonly contexto: CanvasRenderingContext2D;
     private readonly streamSaida: MediaStream;
-    private rafId: number | null = null;
+    private intervaloId: ReturnType<typeof setInterval> | null = null;
     private ativo = true;
 
     constructor(trackOriginal: MediaStreamTrack, fps: number) {
@@ -40,18 +45,10 @@ export class RepasseCanvas {
     }
 
     private iniciarLoop(fps: number) {
-        const intervaloMs = 1000 / fps;
-        let ultimo = 0;
-
-        const loop = (agora: number) => {
+        this.intervaloId = setInterval(() => {
             if (!this.ativo) return;
-            if (agora - ultimo >= intervaloMs) {
-                ultimo = agora;
-                this.desenharQuadro();
-            }
-            this.rafId = requestAnimationFrame(loop);
-        };
-        this.rafId = requestAnimationFrame(loop);
+            this.desenharQuadro();
+        }, 1000 / fps);
     }
 
     private desenharQuadro() {
@@ -77,7 +74,7 @@ export class RepasseCanvas {
     encerrar() {
         if (!this.ativo) return;
         this.ativo = false;
-        if (this.rafId !== null) cancelAnimationFrame(this.rafId);
+        if (this.intervaloId !== null) clearInterval(this.intervaloId);
         this.streamSaida.getTracks().forEach((track) => track.stop());
         this.video.pause();
         this.video.srcObject = null;
