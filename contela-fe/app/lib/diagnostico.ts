@@ -15,6 +15,8 @@ export interface DiagnosticoPeer {
     fps: number | null;
     largura: number | null;
     altura: number | null;
+    fonteLargura: number | null;
+    fonteAltura: number | null;
     perdaPct: number | null;
     limitacao: string | null;
 }
@@ -76,6 +78,7 @@ export function montarTextoDiagnostico(contexto: ContextoDiagnostico, peers: Dia
                     `latência=${p.rttMs === null ? '?' : Math.round(p.rttMs) + ' ms'}, ` +
                     `recebendo=${formatarTaxa(p.kbpsRecebendo)}, enviando=${formatarTaxa(p.kbpsEnviando)}, ` +
                     `vídeo=${formatarResolucao(p.largura, p.altura, p.fps)}, ` +
+                    `fonte=${formatarResolucao(p.fonteLargura, p.fonteAltura, null)}, ` +
                     `perda=${p.perdaPct === null ? '?' : p.perdaPct.toFixed(1) + '%'}, ` +
                     `limitação=${p.limitacao ?? '-'}`
             );

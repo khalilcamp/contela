@@ -9,10 +9,10 @@ import {
 } from '../types/compartilhamento';
 
 import { AudioJanela } from './audioJanela';
-import { forcarBitrateInicial } from './bitrateInicial';
 import { DiagnosticoPeer } from './diagnostico';
 import { SERVIDORES_ICE_PADRAO } from './ice';
 import { pedirOpusEstereo, sdpTemOpusEstereo } from './opus';
+import { RepasseCanvas } from './repasseCanvas';
 
 export const ERRO_SEM_AUDIO = 'SEM_AUDIO';
 
@@ -32,6 +32,8 @@ export class GerenciadorWebRTC {
     private candidatosPendentes: Map<string, RTCIceCandidateInit[]> = new Map();
     private filaSinais: Promise<void> = Promise.resolve();
     private streamLocal: MediaStream | null = null;
+    private streamBruto: MediaStream | null = null;
+    private repasse: RepasseCanvas | null = null;
     private opcoes: OpcoesCompartilhamento = OPCOES_PADRAO;
     private audioJanela: AudioJanela | null = null;
     private transmitindo = false;
@@ -69,7 +71,7 @@ export class GerenciadorWebRTC {
         const ehJanelaDoDesktop = Boolean(fonteId?.startsWith('window:') && window.contela);
         const audioDoSistema = opcoes.audio && !ehJanelaDoDesktop;
 
-        this.streamLocal = await navigator.mediaDevices.getDisplayMedia({
+        this.streamBruto = await navigator.mediaDevices.getDisplayMedia({
             video: construirConstraintsVideo(opcoes),
             audio: audioDoSistema ? ({ systemAudio: 'include', windowAudio: 'window' } as MediaTrackConstraints) : false,
             selfBrowserSurface: 'exclude',
@@ -79,25 +81,33 @@ export class GerenciadorWebRTC {
 
         if (opcoes.audio && ehJanelaDoDesktop && fonteId) {
             this.audioJanela = await AudioJanela.criar(fonteId);
-            if (this.audioJanela) this.streamLocal.addTrack(this.audioJanela.faixa);
+            if (this.audioJanela) this.streamBruto.addTrack(this.audioJanela.faixa);
             else this.audioDeJanelaFalhou = true;
         }
 
-        if (opcoes.apenasAudio && this.streamLocal.getAudioTracks().length === 0) {
-            this.streamLocal.getTracks().forEach((track) => track.stop());
+        if (opcoes.apenasAudio && this.streamBruto.getAudioTracks().length === 0) {
+            this.streamBruto.getTracks().forEach((track) => track.stop());
             this.audioJanela?.encerrar();
             this.audioJanela = null;
-            this.streamLocal = null;
+            this.streamBruto = null;
             throw new Error(ERRO_SEM_AUDIO);
         }
 
-        this.streamLocal.getVideoTracks().forEach((track) => {
-            track.contentHint = 'motion';
-        });
+        const trackVideoBruto = this.streamBruto.getVideoTracks()[0] ?? null;
+
         if (opcoes.apenasAudio) {
-            this.streamLocal.getAudioTracks().forEach((track) => {
+            this.streamBruto.getAudioTracks().forEach((track) => {
                 track.contentHint = 'music';
             });
+            this.streamLocal = this.streamBruto;
+        } else if (trackVideoBruto) {
+            trackVideoBruto.contentHint = 'motion';
+            this.repasse = new RepasseCanvas(trackVideoBruto, opcoes.fps);
+            this.repasse.faixa.contentHint = 'motion';
+            trackVideoBruto.addEventListener('ended', () => this.repasse?.encerrar());
+            this.streamLocal = new MediaStream([this.repasse.faixa, ...this.streamBruto.getAudioTracks()]);
+        } else {
+            this.streamLocal = this.streamBruto;
         }
 
         return this.streamLocal;
@@ -114,8 +124,16 @@ export class GerenciadorWebRTC {
 
     descartarCaptura() {
         if (this.transmitindo) return;
+        this.encerrarCaptura();
+    }
+
+    private encerrarCaptura() {
         this.streamLocal?.getTracks().forEach((track) => track.stop());
         this.streamLocal = null;
+        this.streamBruto?.getTracks().forEach((track) => track.stop());
+        this.streamBruto = null;
+        this.repasse?.encerrar();
+        this.repasse = null;
         this.audioJanela?.encerrar();
         this.audioJanela = null;
     }
@@ -134,10 +152,7 @@ export class GerenciadorWebRTC {
 
     pararCompartilhamento() {
         this.transmitindo = false;
-        this.streamLocal?.getTracks().forEach((track) => track.stop());
-        this.streamLocal = null;
-        this.audioJanela?.encerrar();
-        this.audioJanela = null;
+        this.encerrarCaptura();
 
         this.conexoes.forEach((conexao, peerId) => {
             try {
@@ -224,6 +239,7 @@ export class GerenciadorWebRTC {
             const perdidos = numero(videoEntrada?.packetsLost);
             const recebidosPacotes = numero(videoEntrada?.packetsReceived);
             const rtt = numero(par?.currentRoundTripTime);
+            const configuracaoFonte = videoSaida ? this.streamLocal?.getVideoTracks()[0]?.getSettings() : null;
 
             resultado.push({
                 peerId,
@@ -239,6 +255,8 @@ export class GerenciadorWebRTC {
                 fps: numero(videoEntrada?.framesPerSecond) ?? numero(videoSaida?.framesPerSecond),
                 largura: numero(videoEntrada?.frameWidth) ?? numero(videoSaida?.frameWidth),
                 altura: numero(videoEntrada?.frameHeight) ?? numero(videoSaida?.frameHeight),
+                fonteLargura: configuracaoFonte?.width ?? null,
+                fonteAltura: configuracaoFonte?.height ?? null,
                 perdaPct:
                     perdidos !== null && recebidosPacotes !== null && perdidos + recebidosPacotes > 0
                         ? (perdidos / (perdidos + recebidosPacotes)) * 100
@@ -327,7 +345,6 @@ export class GerenciadorWebRTC {
 
         const offer = await conexao.createOffer();
         if (this.opcoes.apenasAudio) offer.sdp = pedirOpusEstereo(offer.sdp);
-        else offer.sdp = forcarBitrateInicial(offer.sdp, calcularBitrateMaximo(this.opcoes));
         await conexao.setLocalDescription(offer);
         await this.limitarBitrate(conexao);
 
