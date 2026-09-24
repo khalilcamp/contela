@@ -1,11 +1,13 @@
 export type Resolucao = '720p' | '1080p' | '1440p' | 'fonte';
 export type TaxaQuadros = 15 | 30 | 60;
+export type ModoTransmissao = 'qualidade' | 'leve';
 
 export interface OpcoesCompartilhamento {
     resolucao: Resolucao;
     fps: TaxaQuadros;
     audio: boolean;
     apenasAudio: boolean;
+    modo: ModoTransmissao;
 }
 
 export const OPCOES_PADRAO: OpcoesCompartilhamento = {
@@ -13,6 +15,7 @@ export const OPCOES_PADRAO: OpcoesCompartilhamento = {
     fps: 30,
     audio: true,
     apenasAudio: false,
+    modo: 'qualidade',
 };
 
 export interface FonteCaptura {
@@ -35,6 +38,10 @@ const BITRATE_BASE: Record<Resolucao, number> = {
     '1440p': 8_000_000,
     fonte: 8_000_000,
 };
+
+export function resolucaoAlvo(opcoes: OpcoesCompartilhamento): { largura: number; altura: number } | null {
+    return opcoes.resolucao === 'fonte' ? null : ALTURAS[opcoes.resolucao];
+}
 
 export function construirConstraintsVideo(opcoes: OpcoesCompartilhamento): MediaTrackConstraints {
     const constraints: MediaTrackConstraints = { frameRate: { ideal: opcoes.fps, max: opcoes.fps } };

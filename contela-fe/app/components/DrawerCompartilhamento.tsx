@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
     FonteCaptura,
+    ModoTransmissao,
     OPCOES_PADRAO,
     OpcoesCompartilhamento,
     Resolucao,
@@ -30,6 +31,11 @@ const TAXAS: { valor: TaxaQuadros; rotulo: string }[] = [
     { valor: 15, rotulo: '15' },
     { valor: 30, rotulo: '30' },
     { valor: 60, rotulo: '60' },
+];
+
+const MODOS: { valor: ModoTransmissao; rotulo: string }[] = [
+    { valor: 'leve', rotulo: 'Leve' },
+    { valor: 'qualidade', rotulo: 'Qualidade' },
 ];
 
 export function DrawerCompartilhamento({ aberto, onFechar, onIniciar }: DrawerCompartilhamentoProps) {
@@ -187,6 +193,16 @@ export function DrawerCompartilhamento({ aberto, onFechar, onIniciar }: DrawerCo
                                     valor={opcoes.fps}
                                     onChange={(fps) => setOpcoes((o) => ({ ...o, fps }))}
                                 />
+
+                                {!desktop && (
+                                    <Regua
+                                        titulo="Transmissão"
+                                        dica={opcoes.modo === 'qualidade' ? 'Mais pesado' : 'Mais leve'}
+                                        opcoes={MODOS}
+                                        valor={opcoes.modo}
+                                        onChange={(modo) => setOpcoes((o) => ({ ...o, modo }))}
+                                    />
+                                )}
 
                                 <Interruptor
                                     rotulo={rotuloAudio}

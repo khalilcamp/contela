@@ -28,7 +28,12 @@ export class RepasseCanvas {
     private intervaloId: ReturnType<typeof setInterval> | null = null;
     private ativo = true;
 
-    constructor(trackOriginal: MediaStreamTrack, fps: number) {
+    constructor(
+        trackOriginal: MediaStreamTrack,
+        fps: number,
+        private readonly larguraMaxima: number | null = null,
+        private readonly alturaMaxima: number | null = null
+    ) {
         this.video = document.createElement('video');
         this.video.muted = true;
         this.video.playsInline = true;
@@ -52,9 +57,17 @@ export class RepasseCanvas {
     }
 
     private desenharQuadro() {
-        const largura = this.video.videoWidth;
-        const altura = this.video.videoHeight;
-        if (!largura || !altura) return;
+        const larguraNativa = this.video.videoWidth;
+        const alturaNativa = this.video.videoHeight;
+        if (!larguraNativa || !alturaNativa) return;
+
+        const fator = Math.min(
+            1,
+            this.larguraMaxima ? this.larguraMaxima / larguraNativa : 1,
+            this.alturaMaxima ? this.alturaMaxima / alturaNativa : 1
+        );
+        const largura = Math.round(larguraNativa * fator);
+        const altura = Math.round(alturaNativa * fator);
 
         if (this.canvas.width !== largura || this.canvas.height !== altura) {
             this.canvas.width = largura;

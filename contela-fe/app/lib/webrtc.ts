@@ -6,6 +6,7 @@ import {
     OpcoesCompartilhamento,
     calcularBitrateMaximo,
     construirConstraintsVideo,
+    resolucaoAlvo,
 } from '../types/compartilhamento';
 
 import { AudioJanela } from './audioJanela';
@@ -100,9 +101,13 @@ export class GerenciadorWebRTC {
                 track.contentHint = 'music';
             });
             this.streamLocal = this.streamBruto;
+        } else if (trackVideoBruto && opcoes.modo === 'leve') {
+            trackVideoBruto.contentHint = 'motion';
+            this.streamLocal = this.streamBruto;
         } else if (trackVideoBruto) {
             trackVideoBruto.contentHint = 'motion';
-            this.repasse = new RepasseCanvas(trackVideoBruto, opcoes.fps);
+            const alvo = resolucaoAlvo(opcoes);
+            this.repasse = new RepasseCanvas(trackVideoBruto, opcoes.fps, alvo?.largura ?? null, alvo?.altura ?? null);
             this.repasse.faixa.contentHint = 'motion';
             trackVideoBruto.addEventListener('ended', () => this.repasse?.encerrar());
             this.streamLocal = new MediaStream([this.repasse.faixa, ...this.streamBruto.getAudioTracks()]);
