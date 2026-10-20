@@ -206,3 +206,19 @@ export function IconLink({ className }: IconProps) {
         </svg>
     );
 }
+
+export function IconCheck({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M5 12.5 9.5 17 19 7" />
+        </svg>
+    );
+}
+
+export function IconMenosLeve({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className={className}>
+            <path d="M6 12h12" />
+        </svg>
+    );
+}

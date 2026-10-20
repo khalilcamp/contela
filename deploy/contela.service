@@ -1,0 +1,22 @@
+[Unit]
+Description=Contela backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=contela
+Group=contela
+WorkingDirectory=/opt/contela
+EnvironmentFile=/etc/contela.env
+ExecStart=/opt/jre/bin/java $JAVA_OPTS -jar /opt/contela/app.jar
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/contela
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

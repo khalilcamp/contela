@@ -8,6 +8,9 @@ import { IconEscudo } from '../components/icons';
 import { MosaicoTelas } from '../components/MosaicoTelas';
 import { PillPessoasOnline } from '../components/PillPessoasOnline';
 import { PromoLinkpet } from '../components/PromoLinkpet';
+import { RodapeSite } from '../components/RodapeSite';
+import { SecaoComoFunciona } from '../components/SecaoComoFunciona';
+import { SecaoComparativo } from '../components/SecaoComparativo';
 import type { ChapeuEscolha } from '../types/sala';
 
 interface EntrarTelaProps {
@@ -56,6 +59,7 @@ export default function EntrarTela({
     }, []);
 
     return (
+        <div>
         <div
             className="grid min-h-screen text-paper lg:grid-cols-[1.1fr_1fr]"
             style={{
@@ -66,9 +70,16 @@ export default function EntrarTela({
             }}
         >
             <div className="hidden flex-col justify-between border-r border-line px-16 py-16 lg:flex">
-                <div className="flex flex-col items-start gap-3">
+                <div className="flex flex-col items-start gap-4">
                     <p className="font-display text-2xl font-semibold tracking-tight">Contela</p>
                     <PillPessoasOnline />
+                    <p className="mt-2 max-w-sm font-display text-3xl font-semibold leading-tight tracking-tight text-paper">
+                        Compartilhe a tela sem criar conta
+                    </p>
+                    <p className="max-w-sm text-sm leading-relaxed text-mute">
+                        Crie uma sala grátis, mande o código pra quem você quiser e comece — o vídeo vai direto do
+                        seu navegador pro da outra pessoa, sem passar pelo nosso servidor.
+                    </p>
                 </div>
 
                 <div className="flex flex-col items-start gap-8">
@@ -88,6 +99,9 @@ export default function EntrarTela({
                 <div className="mb-10 flex flex-col items-start gap-3 lg:hidden">
                     <p className="font-display text-2xl font-semibold tracking-tight">Contela</p>
                     <PillPessoasOnline />
+                    <p className="mt-1 max-w-sm font-display text-2xl font-semibold leading-tight tracking-tight text-paper">
+                        Compartilhe a tela sem criar conta
+                    </p>
                 </div>
 
                 <div className="w-full max-w-sm">
@@ -133,8 +147,17 @@ export default function EntrarTela({
                 {noNavegador && <BaixarApp className="mt-8 lg:hidden" />}
                 <PromoLinkpet className="mt-8 lg:hidden" />
             </div>
+        </div>
 
-            <DialogoSeguranca aberto={segurancaAberta} onFechar={() => setSegurancaAberta(false)} />
+        {noNavegador && (
+            <>
+                <SecaoComoFunciona />
+                <SecaoComparativo />
+                <RodapeSite onAbrirSeguranca={() => setSegurancaAberta(true)} />
+            </>
+        )}
+
+        <DialogoSeguranca aberto={segurancaAberta} onFechar={() => setSegurancaAberta(false)} />
         </div>
     );
 }
