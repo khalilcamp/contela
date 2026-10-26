@@ -1,0 +1,7 @@
+name = "contela-bot"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+CONTELA_API = "https://contela.pages.dev"
+CONTELA_WEB = "https://contela.pages.dev"
