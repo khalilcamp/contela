@@ -56,6 +56,7 @@ export function useSalaConexao() {
     const temporizadorAvisoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const ultimoAvisoDigitandoRef = useRef(0);
     const temporizadoresDigitandoRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+    const donoDaUrlRef = useRef<{ sala: string; token: string } | null>(null);
 
     const [nome, setNome] = useState('');
     const [salaId, setSalaId] = useState('');
@@ -113,9 +114,22 @@ export function useSalaConexao() {
     }, []);
 
     useEffect(() => {
-        const daUrl = new URLSearchParams(window.location.search).get('sala');
+        const parametros = new URLSearchParams(window.location.search);
+        const daUrl = parametros.get('sala');
+        const dono = parametros.get('dono');
         // eslint-disable-next-line react-hooks/set-state-in-effect -- le a URL e o localStorage so no cliente (evita hydration mismatch)
         if (daUrl) setSalaId(daUrl);
+
+        if (daUrl && dono && /^[A-Za-z0-9_-]{16,128}$/.test(dono)) {
+            donoDaUrlRef.current = { sala: normalizarSalaId(daUrl), token: dono };
+            parametros.delete('dono');
+            const busca = parametros.toString();
+            window.history.replaceState(
+                {},
+                '',
+                `${window.location.pathname}${busca ? `?${busca}` : ''}${window.location.hash}`,
+            );
+        }
 
         try {
             const corSalva = window.localStorage.getItem(CHAVE_COR);
@@ -364,7 +378,8 @@ export function useSalaConexao() {
         limparErro();
         setEntrando(true);
         if (!(await servidorDisponivel())) return;
-        iniciarConexao(alvo, null);
+        const dono = donoDaUrlRef.current;
+        iniciarConexao(alvo, dono?.sala === alvo ? dono.token : null);
     }
 
     async function handleCriar() {
