@@ -155,6 +155,19 @@ export class GerenciadorWebRTC {
         await this.criarOfertaPara(peerId);
     }
 
+    removerParticipante(peerId: string) {
+        const conexao = this.conexoes.get(peerId);
+        if (conexao) {
+            try {
+                conexao.close();
+            } catch {}
+        }
+        this.conexoes.delete(peerId);
+        this.candidatosPendentes.delete(peerId);
+        this.ultimasLeituras.delete(peerId);
+        this.onCompartilhamentoParado(peerId);
+    }
+
     pararCompartilhamento() {
         this.transmitindo = false;
         this.encerrarCaptura();

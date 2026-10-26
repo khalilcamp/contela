@@ -255,7 +255,17 @@ export function useSalaConexao() {
                     setEntrando(false);
                 },
                 onParticipantes: (salaAtualizada) => {
-                    participantesAtuaisRef.current = new Set(salaAtualizada.participantes.map((p) => p.id));
+                    const anteriores = participantesAtuaisRef.current;
+                    const atuais = new Set(salaAtualizada.participantes.map((p) => p.id));
+                    participantesAtuaisRef.current = atuais;
+
+                    const removidos = [...anteriores].filter(
+                        (id) => id !== meuIdRef.current && !atuais.has(id),
+                    );
+                    removidos.forEach((id) => {
+                        participantesConhecidosRef.current.delete(id);
+                        webrtcRef.current?.removerParticipante(id);
+                    });
 
                     const novosIds = salaAtualizada.participantes
                         .map((p) => p.id)
